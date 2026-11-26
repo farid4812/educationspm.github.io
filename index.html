@@ -1,0 +1,3201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT-Based Mathematical Tool for STEM Learning – SPM Edition V4 (A4988 CNC Shield)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Default Theme: Strawberry Matcha */
+      --bg-outer: #4F7754;
+      --bg-header: rgba(249, 245, 240, 0.96);
+      --bg-card: #FFFCF9;
+      --bg-soft: #F9F5F0;
+      --bg-primary-soft: #E7EFE4;
+      --bg-secondary-soft: #FBEAE9;
+      --primary: #4F7754;
+      --primary-hover: #3F6244;
+      --secondary: #D96B78;
+      --secondary-hover: #C45663;
+      --text-main: #233326;
+      --text-muted: #5A6E5E;
+      --text-on-primary: #FFFCF9;
+      --border: #DCE4D8;
+      --border-strong: #B9CCB3;
+      --shadow-card: 0 14px 32px -8px rgba(24, 42, 27, 0.28);
+
+      /* Plotter Sheet Colors */
+      --paper-bg: #FFFCF9;
+      --paper-grid-major: rgba(79, 119, 84, 0.25);
+      --paper-grid-minor: rgba(133, 173, 138, 0.17);
+      --paper-zone-top: rgba(231, 239, 228, 0.55);
+      --paper-zone-graph: rgba(251, 234, 233, 0.22);
+      --ink-axis: #233326;
+      --ink-tick: #4F7754;
+      --ink-curve1: #D96B78;
+      --ink-curve2: #3B7A57;
+      --ink-curve3: #2563EB;
+      --ink-curve4: #D97706;
+      --ink-shade: rgba(79, 119, 84, 0.18);
+    }
+
+    html, body {
+      background-color: var(--bg-outer);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Theme-aware Utility Classes */
+    .theme-header {
+      background-color: var(--bg-header);
+      border-bottom: 2px solid var(--border);
+    }
+    .theme-card {
+      background-color: var(--bg-card);
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow-card);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .theme-soft {
+      background-color: var(--bg-soft);
+      border: 1px solid var(--border);
+    }
+    .theme-primary-soft {
+      background-color: var(--bg-primary-soft);
+      border: 1px solid var(--border-strong);
+    }
+    .theme-secondary-soft {
+      background-color: var(--bg-secondary-soft);
+      border: 1px solid var(--border);
+    }
+    .theme-btn-primary {
+      background-color: var(--primary);
+      color: var(--text-on-primary);
+    }
+    .theme-btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+    .theme-btn-secondary {
+      background-color: var(--secondary);
+      color: #FFFFFF;
+    }
+    .theme-btn-secondary:hover {
+      background-color: var(--secondary-hover);
+    }
+    .theme-text-main { color: var(--text-main); }
+    .theme-text-muted { color: var(--text-muted); }
+    .theme-text-primary { color: var(--primary); }
+    .theme-text-secondary { color: var(--secondary); }
+    .theme-border { border-color: var(--border); }
+
+    .theme-input {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      color: var(--text-main);
+    }
+    .theme-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--bg-primary-soft);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.12); }
+    ::-webkit-scrollbar-thumb { background: var(--secondary); border-radius: 9999px; }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .animate-pulse-fast {
+      animation: pulseGlow 1.15s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes shakeCard {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-7px); }
+      40%, 80% { transform: translateX(7px); }
+    }
+    .animate-shake {
+      animation: shakeCard 0.35s ease-in-out;
+    }
+
+    .wire-dim { opacity: 0.18; transition: opacity 0.25s ease; }
+    .wire-active { opacity: 1; filter: drop-shadow(0 0 4px currentColor); transition: opacity 0.25s ease; }
+  </style>
+</head>
+<body class="w-full min-h-screen antialiased pb-14">
+
+  <!-- ===================================================================== -->
+  <!-- SECURE OPERATOR LOGIN OVERLAY (NO CREDENTIAL HINTS DISPLAYED)         -->
+  <!-- ===================================================================== -->
+  <div id="login-overlay" class="fixed inset-0 z-50 backdrop-blur-md flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.72);">
+    <div id="login-card" class="w-full max-w-md theme-card rounded-3xl overflow-hidden shadow-2xl">
+      <div class="h-2 w-full" style="background: linear-gradient(90deg, var(--primary), var(--secondary));"></div>
+      <div class="p-6 sm:p-8">
+        <div class="flex items-center gap-3.5 mb-6">
+          <div class="w-12 h-12 rounded-2xl theme-btn-primary flex items-center justify-center font-extrabold text-2xl shadow-md shrink-0">
+            ∑
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight theme-text-main">
+              IoT STEM Math Plotter
+            </h1>
+            <p class="text-xs font-mono theme-text-muted mt-0.5">
+              ESP32-C5 • CNC Shield V3 • A4988 Access Gate
+            </p>
+          </div>
+        </div>
+
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label for="login-id" class="block text-[11px] font-mono font-bold uppercase tracking-wider theme-text-primary mb-1.5">
+              Operator ID
+            </label>
+            <input
+              id="login-id"
+              type="text"
+              autocomplete="off"
+              placeholder="Enter Operator ID"
+              required
+              class="w-full theme-input rounded-xl px-4 py-3 font-mono text-sm font-semibold"
+            />
+          </div>
+
+          <div>
+            <label for="login-pass" class="block text-[11px] font-mono font-bold uppercase tracking-wider theme-text-primary mb-1.5">
+              Security Password
+            </label>
+            <input
+              id="login-pass"
+              type="password"
+              autocomplete="off"
+              placeholder="Enter Password"
+              required
+              class="w-full theme-input rounded-xl px-4 py-3 font-mono text-sm font-semibold"
+            />
+          </div>
+
+          <!-- Error Banner -->
+          <div id="login-error-box" class="hidden p-3 rounded-xl theme-secondary-soft border border-rose-400 text-rose-700 font-mono text-xs font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span id="login-error-msg">Invalid credential</span>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3.5 px-4 rounded-xl theme-btn-primary font-extrabold text-sm tracking-wide shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>AUTHENTICATE & OPEN DASHBOARD</span>
+            <span>→</span>
+          </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t theme-border flex items-center justify-between text-[11px] font-mono theme-text-muted">
+          <span>SPM Edition V4</span>
+          <span>Web Serial Telemetry</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN APPLICATION SHELL (LOCKED UNTIL AUTHENTICATED)                   -->
+  <!-- ===================================================================== -->
+  <div id="app-shell" class="hidden">
+
+    <!-- TOP HEADER WITH INSTANT 5-THEME SWITCHER, WEB SERIAL & LOGOUT -->
+    <header class="sticky top-0 z-40 w-full theme-header backdrop-blur-md shadow-md">
+      <div class="max-w-[1640px] mx-auto px-4 sm:px-6 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+        <!-- Brand & Hardware Specs -->
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-2xl theme-btn-primary flex items-center justify-center font-extrabold text-2xl shadow-md border theme-border shrink-0">
+            ∑
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-base sm:text-lg font-extrabold tracking-tight theme-text-main">
+                IoT-Based Mathematical Tool for STEM Learning – <span class="theme-text-primary">SPM Edition V4</span>
+              </h1>
+              <span id="theme-badge-label" class="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider rounded-full theme-secondary-soft theme-text-secondary">
+                STRAWBERRY MATCHA
+              </span>
+            </div>
+            <p class="text-[11px] font-mono theme-text-muted tracking-wide mt-0.5">
+              ESP32-C5 • CNC SHIELD V3 • A4988 STEPPER DRIVERS • NEMA 17 + ENCODER • DHT22 • 300 × 300 mm PLOTTER
+            </p>
+          </div>
+        </div>
+
+        <!-- Theme Switcher, Web Serial Connect, Status & Logout -->
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <!-- Theme Selector Pill -->
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl theme-soft">
+            <span class="text-[11px] font-bold theme-text-primary">🎨 THEME:</span>
+            <select id="theme-selector" aria-label="Select Application Theme" class="bg-transparent font-mono text-xs font-bold theme-text-main focus:outline-none cursor-pointer pr-1">
+              <option value="matcha">🍓 Strawberry Matcha</option>
+              <option value="dark">🌙 Dark Mode (Midnight Lab)</option>
+              <option value="boy">⚡ Boy Edition (Cobalt Carbon)</option>
+              <option value="lavender">🫐 Blueberry Lavender</option>
+              <option value="exam">📐 Classic Exam Graph Paper</option>
+            </select>
+          </div>
+
+          <!-- Web Serial Baud & Connect Control -->
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-xl theme-soft">
+            <select id="header-baud-select" aria-label="Serial Baud Rate" class="bg-transparent font-mono text-xs font-bold theme-text-main focus:outline-none cursor-pointer">
+              <option value="115200" selected>115200</option>
+              <option value="9600">9600</option>
+              <option value="250000">250000</option>
+            </select>
+            <button id="btn-header-serial" type="button" class="px-3 py-1 rounded-lg theme-btn-primary font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5">
+              <span id="header-serial-dot" class="w-2 h-2 rounded-full bg-amber-300"></span>
+              <span id="header-serial-btn-text">CONNECT ESP32</span>
+            </button>
+          </div>
+
+          <!-- Connection Mode Badge -->
+          <span id="serial-mode-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-primary-soft theme-text-primary font-bold">
+            SIMULATION MODE
+          </span>
+
+          <!-- Global Plotter Status Badge -->
+          <span id="global-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-soft theme-text-main font-bold">
+            IDLE
+          </span>
+
+          <!-- Logout Button -->
+          <button id="btn-logout" type="button" class="px-3 py-1.5 rounded-xl theme-btn-secondary font-bold text-xs transition cursor-pointer">
+            LOGOUT
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="max-w-[1640px] mx-auto px-4 sm:px-6 pt-6 space-y-6">
+
+      <!-- ROW 1: PANEL 1 (SPM QUESTION BANK & MULTI-EQUATION INPUT) + PANEL 2 (STEP-BY-STEP SOLVER) -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        <!-- PANEL 1: SPM MATHEMATICS INPUT (UP TO 4 EQUATIONS) -->
+        <section class="xl:col-span-5 theme-card rounded-3xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3.5 border-b theme-border">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg theme-primary-soft theme-text-primary font-mono text-xs font-bold">PANEL 1</span>
+                <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">SPM Question Bank & Multi-Equation Input</h2>
+              </div>
+              <span class="text-[11px] font-mono theme-text-muted font-semibold">KSSM FORM 4 & 5</span>
+            </div>
+
+            <!-- Unlimited Random Question Generator Banner -->
+            <div class="mb-3.5 p-3 rounded-2xl theme-secondary-soft flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+              <div>
+                <span class="text-xs font-extrabold theme-text-secondary block">Unlimited SPM Practice Generator</span>
+                <span class="text-[11px] theme-text-muted">Generate fresh linear, quadratic & multi-equation problems.</span>
+              </div>
+              <button id="btn-generate-random" type="button" class="px-3.5 py-2 rounded-xl theme-btn-secondary font-bold text-xs shadow-sm transition shrink-0 cursor-pointer">
+                🎲 Generate Random SPM Question
+              </button>
+            </div>
+
+            <!-- Topic & Source Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+              <div>
+                <label class="block text-[10px] font-mono uppercase theme-text-primary font-bold mb-1">Filter by SPM Topic</label>
+                <select id="topic-filter" class="w-full theme-input rounded-xl px-3 py-1.5 text-xs font-medium transition">
+                  <option value="ALL">All SPM Core Math Topics</option>
+                  <option value="INEQUALITY">Linear Inequalities / Multi-Line (Form 4)</option>
+                  <option value="SIMULTANEOUS">Simultaneous Linear Equations (Form 4)</option>
+                  <option value="QUADRATIC">Quadratic Functions & Graphs (Form 4)</option>
+                  <option value="LINEAR">Straight Lines (Form 3 & 4)</option>
+                  <option value="CIRCLE">Circle & Locus (Form 3)</option>
+                  <option value="TRIG">Trigonometric Graphs (Form 5)</option>
+                  <option value="CUBIC">Cubic & Reciprocal Graphs (Form 5)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase theme-text-primary font-bold mb-1">Question Source</label>
+                <select id="source-filter" class="w-full theme-input rounded-xl px-3 py-1.5 text-xs font-medium transition">
+                  <option value="ALL">All Sources (SPM + State Trials)</option>
+                  <option value="SPM">Actual SPM Past Year</option>
+                  <option value="TRIAL">State Trial Papers (MRSM/SBP/Kedah/Selangor)</option>
+                  <option value="GENERATED">Generated Practice</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Curated Question List -->
+            <div class="mb-3.5">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-mono uppercase theme-text-primary font-bold">Select SPM / Trial Question:</span>
+                <span id="question-count-label" class="text-[10px] font-mono theme-text-muted">13 questions</span>
+              </div>
+              <div id="question-bank-list" class="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- MULTI-EQUATION INPUT SECTION (PRIMARY + 3 OPTIONAL EQUATIONS) -->
+            <div class="space-y-2.5 theme-soft p-3.5 rounded-2xl">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[11px] font-mono uppercase theme-text-main font-extrabold">
+                  Equations to Plot (Up to 4 Equations)
+                </span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" id="btn-add-eq-slot" class="px-2 py-0.5 rounded-lg theme-primary-soft theme-text-primary font-mono text-[10px] font-bold hover:opacity-85 transition cursor-pointer">
+                    + Add Equation
+                  </button>
+                  <button type="button" id="btn-clear-extra-eqs" class="px-2 py-0.5 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-[10px] font-bold hover:opacity-85 transition cursor-pointer">
+                    Clear Extra
+                  </button>
+                </div>
+              </div>
+
+              <!-- Equation 1 (Primary - Always Visible) -->
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: var(--ink-curve1);" title="Curve 1 Color"></span>
+                <label for="eq-input-1" class="text-[11px] font-mono font-bold theme-text-main w-12 shrink-0">Eq 1*:</label>
+                <input id="eq-input-1" type="text" value="5x + 6y = 120" class="w-full theme-input rounded-xl px-3 py-1.5 font-mono text-xs font-semibold" placeholder="e.g. y = x^2 - 4x + 3 or 5x + 6y = 120">
+              </div>
+
+              <!-- Equation 2 (Optional) -->
+              <div id="eq-row-2" class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: var(--ink-curve2);" title="Curve 2 Color"></span>
+                <label for="eq-input-2" class="text-[11px] font-mono font-bold theme-text-muted w-12 shrink-0">Eq 2:</label>
+                <input id="eq-input-2" type="text" value="x + y = 10" class="w-full theme-input rounded-xl px-3 py-1.5 font-mono text-xs font-semibold" placeholder="Optional 2nd equation (e.g. x + y = 10)">
+              </div>
+
+              <!-- Equation 3 (Optional) -->
+              <div id="eq-row-3" class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: var(--ink-curve3);" title="Curve 3 Color"></span>
+                <label for="eq-input-3" class="text-[11px] font-mono font-bold theme-text-muted w-12 shrink-0">Eq 3:</label>
+                <input id="eq-input-3" type="text" value="x = y" class="w-full theme-input rounded-xl px-3 py-1.5 font-mono text-xs font-semibold" placeholder="Optional 3rd equation (e.g. x = y)">
+              </div>
+
+              <!-- Equation 4 (Optional - Hidden until clicked or loaded) -->
+              <div id="eq-row-4" class="hidden flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: var(--ink-curve4);" title="Curve 4 Color"></span>
+                <label for="eq-input-4" class="text-[11px] font-mono font-bold theme-text-muted w-12 shrink-0">Eq 4:</label>
+                <input id="eq-input-4" type="text" value="" class="w-full theme-input rounded-xl px-3 py-1.5 font-mono text-xs font-semibold" placeholder="Optional 4th equation (e.g. x = 20)">
+              </div>
+
+              <!-- Question Context / Notes -->
+              <div class="pt-1">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="question-notes-input" class="text-[10px] font-mono uppercase theme-text-muted font-bold">Question Prompt / Condition</label>
+                  <label class="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold theme-text-primary cursor-pointer">
+                    <input id="toggle-shade-region" type="checkbox" checked class="rounded cursor-pointer">
+                    <span>Shade Feasible Region (Inequalities)</span>
+                  </label>
+                </div>
+                <input id="question-notes-input" type="text" value="MRSM Trial Q12(b): Region satisfying 5x + 6y ≤ 120, x + y ≥ 10, and y ≤ x (x ≥ 0, y ≥ 0)" class="w-full theme-input rounded-xl px-3 py-1.5 text-xs">
+              </div>
+
+              <!-- Quick Multi-Equation & Single-Equation Presets -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <button type="button" onclick="loadQuickPreset('mrsm12b')" class="px-2 py-1 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-[10px] font-bold transition cursor-pointer">MRSM Q12(b) 3-Eq</button>
+                <button type="button" onclick="loadQuickPreset('quad1')" class="px-2 py-1 rounded-lg theme-primary-soft theme-text-primary font-mono text-[10px] font-semibold transition cursor-pointer">y = x² - 4x + 3</button>
+                <button type="button" onclick="loadQuickPreset('simul2')" class="px-2 py-1 rounded-lg theme-primary-soft theme-text-primary font-mono text-[10px] font-semibold transition cursor-pointer">2-Eq Intersection</button>
+                <button type="button" onclick="loadQuickPreset('circle1')" class="px-2 py-1 rounded-lg theme-primary-soft theme-text-primary font-mono text-[10px] font-semibold transition cursor-pointer">x² + y² = 25</button>
+                <button type="button" onclick="loadQuickPreset('trig1')" class="px-2 py-1 rounded-lg theme-primary-soft theme-text-primary font-mono text-[10px] font-semibold transition cursor-pointer">y = 2sin(x)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary Solve & Plot Buttons -->
+          <div class="mt-3.5 space-y-2">
+            <button id="btn-solve-only" type="button" class="w-full py-2.5 px-4 rounded-xl theme-primary-soft theme-text-primary font-bold text-xs sm:text-sm tracking-wide transition flex items-center justify-center gap-2 cursor-pointer hover:opacity-90">
+              <span>1. SOLVE & AUTO-SCALE AXES (SPM MARKING SCHEME)</span>
+            </button>
+            <button id="btn-send-plotter" type="button" class="w-full py-3 px-4 rounded-xl theme-btn-primary font-extrabold text-xs sm:text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+              <span>2. SEND TO DRAWING MACHINE (WRITE + PLOT ALL)</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- PANEL 2: STEP-BY-STEP SPM SOLVER ENGINE -->
+        <section class="xl:col-span-7 theme-card rounded-3xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b theme-border">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-xs font-bold">PANEL 2</span>
+                <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">Step-by-Step Solver & Auto-Scale Engine</h2>
+              </div>
+              <span id="solver-timestamp" class="px-2.5 py-1 rounded-full theme-primary-soft font-mono text-[11px] theme-text-primary font-semibold">
+                K1 / K2 / N1 SCHEME READY
+              </span>
+            </div>
+
+            <!-- Equation Hero Card -->
+            <div class="theme-soft rounded-2xl p-4 mb-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                <span id="solver-exam-tag" class="text-[11px] font-mono uppercase tracking-wider theme-text-secondary font-bold">
+                  TRIAL MRSM Q12(b) • LINEAR INEQUALITIES & MULTI-LINE SYSTEM
+                </span>
+                <span id="solver-topic-badge" class="px-2.5 py-0.5 rounded-full theme-primary-soft font-mono text-[11px] theme-text-primary font-bold">
+                  3 EQUATIONS
+                </span>
+              </div>
+              <div id="solver-main-equation" class="text-lg sm:text-xl font-mono font-extrabold theme-text-main tracking-tight mt-1">
+                (1) 5x + 6y = 120  |  (2) x + y = 10  |  (3) x = y
+              </div>
+              <p id="solver-question-desc" class="text-xs theme-text-muted mt-1">
+                Draw the three straight lines on auto-scaled axes (X: 0 to 35, Y: 0 to 45) and shade the feasible region.
+              </p>
+            </div>
+
+            <!-- Formula & Step-by-Step Working -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
+              <div class="lg:col-span-5 theme-secondary-soft rounded-2xl p-3.5">
+                <h3 class="text-[11px] font-mono uppercase theme-text-secondary font-bold mb-2">SPM Formulas & Rules</h3>
+                <div id="solver-formula" class="font-mono text-xs theme-text-main space-y-1.5 leading-relaxed">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <div class="lg:col-span-7 theme-primary-soft rounded-2xl p-3.5">
+                <h3 class="text-[11px] font-mono uppercase theme-text-primary font-bold mb-2">Step-by-Step Working (Paper 2 Scheme)</h3>
+                <div id="solver-steps" class="font-mono text-xs theme-text-main space-y-2 leading-relaxed">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Mathematical Properties & Auto-Scale Bounds Grid -->
+            <div class="theme-soft rounded-2xl p-3.5 mb-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h3 class="text-[11px] font-mono uppercase theme-text-primary font-bold">Critical Points & Auto-Scale Axis Range</h3>
+                <span id="autoscale-range-badge" class="text-[11px] font-mono theme-text-secondary font-bold">Auto-Scale X: [0, 35] • Y: [0, 45]</span>
+              </div>
+              <div id="solver-properties" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Final Answer Box -->
+          <div class="theme-primary-soft border-2 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono uppercase tracking-wider theme-text-primary font-bold block">FINAL ANSWER (WRITTEN COMPACTLY ON PLOTTER HEADER)</span>
+              <div id="solver-final-answer" class="font-mono text-sm sm:text-base font-extrabold theme-text-main mt-0.5">
+                Vertices: (5,5), (10.9,10.9), (24,0), (10,0) | Max Y-int: (0,20)
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-xl theme-btn-primary font-mono text-[11px] font-bold shrink-0 self-start sm:self-center">
+              FULL MARKS J1 / N1
+            </span>
+          </div>
+        </section>
+      </div>
+
+      <!-- ROW 2: PANEL 3 (LARGE 300x300MM DRAWING MACHINE) + PANEL 4 (IoT DASHBOARD & SERIAL) -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        <!-- PANEL 3: AUTOMATED 300 x 300 MM DRAWING MACHINE -->
+        <section class="xl:col-span-7 theme-card rounded-3xl p-5 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b theme-border">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-lg theme-primary-soft theme-text-primary font-mono text-xs font-bold">PANEL 3</span>
+              <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">Automated Drawing Machine • 300 × 300 mm Sheet</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="pen-state-badge" class="px-2.5 py-1 rounded-lg theme-soft font-mono text-[11px] font-bold theme-text-primary">
+                PEN UP – M5
+              </span>
+            </div>
+          </div>
+
+          <!-- Live Coordinate Strip -->
+          <div class="flex flex-wrap items-center justify-between gap-2 theme-soft rounded-xl px-3.5 py-2 mb-3 text-[11px] font-mono theme-text-main">
+            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+              <span>PEN X: <strong id="strip-pen-x" class="theme-text-primary">18.0 mm</strong></span>
+              <span>PEN Y: <strong id="strip-pen-y" class="theme-text-primary">18.0 mm</strong></span>
+              <span>PHASE: <strong id="strip-phase" class="theme-text-secondary">READY</strong></span>
+              <span>PROGRESS: <strong id="strip-progress" class="theme-text-main">0%</strong></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="inline-flex items-center gap-1.5 cursor-pointer theme-text-muted hover:opacity-80">
+                <input id="toggle-travel-lines" type="checkbox" checked class="rounded">
+                <span>Pen-Up Travel</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dynamic Curve Legend Bar -->
+          <div id="canvas-curve-legend" class="flex flex-wrap items-center gap-2 mb-3 text-[11px] font-mono">
+            <!-- Populated dynamically with active equation colors -->
+          </div>
+
+          <!-- 300x300mm Interactive Plotter Canvas Wrapper -->
+          <div class="relative w-full max-w-[680px] mx-auto aspect-square rounded-2xl overflow-hidden shadow-lg border-2 theme-border" style="background-color: var(--paper-bg);">
+            <canvas id="plotter-canvas" class="w-full h-full block"></canvas>
+          </div>
+
+          <!-- Plotter Speed & Control Toolbar -->
+          <div class="mt-4 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 theme-soft p-2.5 rounded-xl">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-mono theme-text-primary font-bold uppercase">Plotter Speed:</span>
+                <div class="inline-flex rounded-lg theme-card p-0.5 border theme-border font-mono text-xs">
+                  <button type="button" onclick="setPlotterSpeed(1)" id="spd-1" class="speed-btn px-2.5 py-1 rounded-md theme-text-muted transition cursor-pointer">1x</button>
+                  <button type="button" onclick="setPlotterSpeed(2.5)" id="spd-2.5" class="speed-btn px-2.5 py-1 rounded-md theme-btn-primary font-bold transition cursor-pointer">2.5x</button>
+                  <button type="button" onclick="setPlotterSpeed(6)" id="spd-6" class="speed-btn px-2.5 py-1 rounded-md theme-text-muted transition cursor-pointer">6x</button>
+                  <button type="button" onclick="setPlotterSpeed(999)" id="spd-999" class="speed-btn px-2.5 py-1 rounded-md theme-text-muted transition cursor-pointer">Instant</button>
+                </div>
+              </div>
+              <span class="text-[11px] font-mono theme-text-muted">Pen Up = M5 • Pen Down = M3 (Streams Live to ESP32)</span>
+            </div>
+
+            <!-- Primary Plotter Buttons -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs font-bold">
+              <button id="btn-draw-all" type="button" class="py-2.5 px-3 rounded-xl theme-btn-primary transition cursor-pointer">
+                ▶ WRITE + DRAW ALL
+              </button>
+              <button id="btn-pause-resume" type="button" class="py-2.5 px-3 rounded-xl theme-primary-soft theme-text-main transition cursor-pointer hover:opacity-85">
+                ⏸ PAUSE / RESUME
+              </button>
+              <button id="btn-stop-plotter" type="button" class="py-2.5 px-3 rounded-xl theme-btn-secondary transition cursor-pointer">
+                ⏹ EMERGENCY STOP
+              </button>
+              <button id="btn-clear-paper" type="button" class="py-2.5 px-3 rounded-xl theme-soft theme-text-main transition cursor-pointer hover:opacity-85">
+                🗑 CLEAR SHEET
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs font-semibold">
+              <button id="btn-home-pos" type="button" class="py-2 px-3 rounded-xl theme-soft theme-text-primary transition cursor-pointer hover:opacity-85">
+                ⌂ HOME (G28)
+              </button>
+              <button id="btn-write-text-only" type="button" class="py-2 px-3 rounded-xl theme-soft theme-text-main transition cursor-pointer hover:opacity-85">
+                ✎ WRITE HEADER ONLY
+              </button>
+              <button id="btn-draw-graph-only" type="button" class="py-2 px-3 rounded-xl theme-soft theme-text-secondary transition cursor-pointer hover:opacity-85">
+                📈 DRAW GRAPH ONLY
+              </button>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button id="btn-pen-up" type="button" class="py-2 px-2 rounded-xl theme-primary-soft theme-text-main text-[11px] transition cursor-pointer">
+                  PEN UP
+                </button>
+                <button id="btn-pen-down" type="button" class="py-2 px-2 rounded-xl theme-secondary-soft theme-text-secondary text-[11px] transition cursor-pointer">
+                  PEN DN
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 4: IoT WEB DASHBOARD & LIVE WEB SERIAL MONITOR -->
+        <section class="xl:col-span-5 flex flex-col gap-6">
+
+          <!-- IoT Telemetry & Manual Jog Card -->
+          <div class="theme-card rounded-3xl p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b theme-border">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-xs font-bold">PANEL 4</span>
+                <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">IoT Web Serial & CNC Shield Control</h2>
+              </div>
+              <span id="panel4-serial-status" class="text-[11px] font-mono theme-text-primary font-bold">● WEB SERIAL READY</span>
+            </div>
+
+            <!-- Web Serial Hardware Link Bar inside Panel 4 -->
+            <div class="theme-primary-soft rounded-2xl p-3 mb-4 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+              <div>
+                <div class="font-extrabold theme-text-main">ESP32-C5 + CNC Shield V3 (A4988)</div>
+                <div id="serial-port-subtitle" class="text-[11px] theme-text-muted">USB Serial: Disconnected (Running Local Simulation)</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button id="btn-panel4-serial" type="button" class="px-3 py-1.5 rounded-xl theme-btn-primary font-bold text-[11px] transition cursor-pointer">
+                  Connect USB Port
+                </button>
+                <button type="button" onclick="sendSerialGcode('M17')" class="px-2.5 py-1.5 rounded-xl theme-card border theme-border font-bold text-[11px] theme-text-primary cursor-pointer" title="Enable A4988 Drivers (EN=LOW)">
+                  M17 EN
+                </button>
+                <button type="button" onclick="sendSerialGcode('M18')" class="px-2.5 py-1.5 rounded-xl theme-card border theme-border font-bold text-[11px] theme-text-secondary cursor-pointer" title="Disable A4988 Drivers (EN=HIGH)">
+                  M18 OFF
+                </button>
+              </div>
+            </div>
+
+            <!-- Telemetry Grid -->
+            <div class="grid grid-cols-2 gap-2.5 mb-4 font-mono">
+              <div class="theme-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-muted uppercase block">CURRENT X</span>
+                <span id="dash-cur-x" class="text-base sm:text-lg font-extrabold theme-text-main">18.0 mm</span>
+              </div>
+              <div class="theme-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-muted uppercase block">CURRENT Y</span>
+                <span id="dash-cur-y" class="text-base sm:text-lg font-extrabold theme-text-main">18.0 mm</span>
+              </div>
+              <div class="theme-primary-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-primary uppercase block">TARGET X</span>
+                <span id="dash-tgt-x" class="text-sm sm:text-base font-bold theme-text-main">18.0 mm</span>
+              </div>
+              <div class="theme-primary-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-primary uppercase block">TARGET Y</span>
+                <span id="dash-tgt-y" class="text-sm sm:text-base font-bold theme-text-main">18.0 mm</span>
+              </div>
+              <div class="theme-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-muted uppercase block">MOTOR SPEED (A4988 / NEMA 17)</span>
+                <span id="dash-rpm" class="text-sm sm:text-base font-bold theme-text-primary">0 RPM</span>
+              </div>
+              <div class="theme-secondary-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-secondary uppercase block">JOB PROGRESS</span>
+                <span id="dash-progress" class="text-sm sm:text-base font-bold theme-text-secondary">0%</span>
+              </div>
+              <div class="theme-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-muted uppercase block">QUADRATURE ENCODER</span>
+                <span id="dash-encoder" class="text-sm sm:text-base font-bold theme-text-main">360 steps</span>
+              </div>
+              <div class="theme-soft rounded-2xl p-3 text-center">
+                <span class="text-[10px] theme-text-muted uppercase block">POSITION ERROR</span>
+                <span id="dash-error" class="text-sm sm:text-base font-bold theme-text-primary">0.00 mm</span>
+              </div>
+            </div>
+
+            <!-- Manual Jog Pad -->
+            <div class="theme-soft rounded-2xl p-3.5 text-center">
+              <span class="text-[11px] font-mono uppercase theme-text-primary font-bold block mb-2.5">
+                MANUAL JOG CONTROL (±10 mm per step • Streams G-Code)
+              </span>
+              <div class="inline-grid grid-cols-3 gap-2">
+                <div></div>
+                <button type="button" onclick="manualJog(0, -10)" class="w-12 h-11 rounded-xl theme-primary-soft theme-text-main font-bold text-base transition cursor-pointer hover:opacity-80" title="Move Up (-Y)">↑</button>
+                <div></div>
+                <button type="button" onclick="manualJog(-10, 0)" class="w-12 h-11 rounded-xl theme-primary-soft theme-text-main font-bold text-base transition cursor-pointer hover:opacity-80" title="Move Left (-X)">←</button>
+                <button type="button" onclick="manualJog(0, 10)" class="w-12 h-11 rounded-xl theme-primary-soft theme-text-main font-bold text-base transition cursor-pointer hover:opacity-80" title="Move Down (+Y)">↓</button>
+                <button type="button" onclick="manualJog(10, 0)" class="w-12 h-11 rounded-xl theme-primary-soft theme-text-main font-bold text-base transition cursor-pointer hover:opacity-80" title="Move Right (+X)">→</button>
+              </div>
+              <p class="text-[11px] font-mono theme-text-muted mt-2">
+                Tip: Toggle <span class="theme-text-secondary font-bold">PEN DN</span> then use arrow keys to draw manually on canvas & ESP32!
+              </p>
+            </div>
+          </div>
+
+          <!-- Serial Monitor Card with Direct G-Code Input -->
+          <div class="theme-card rounded-3xl p-5 flex-1 flex flex-col">
+            <div class="flex items-center justify-between pb-2.5 mb-3 border-b theme-border">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--secondary);"></span>
+                <h3 class="text-xs font-extrabold font-mono uppercase tracking-wider theme-text-main">ESP32-C5 Serial Monitor (RX / TX)</h3>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="sendSerialGcode('?')" class="px-2 py-1 rounded-lg theme-primary-soft font-mono text-[10px] theme-text-primary font-bold transition cursor-pointer" title="Query Status">?</button>
+                <button type="button" onclick="clearSerialLog()" class="px-2.5 py-1 rounded-lg theme-secondary-soft font-mono text-[11px] theme-text-secondary font-bold transition cursor-pointer">
+                  CLEAR
+                </button>
+              </div>
+            </div>
+            <div id="serial-console" class="flex-1 min-h-[190px] max-h-[260px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl p-3 font-mono text-[11px] leading-relaxed space-y-1 text-emerald-300">
+              <!-- Logs populated by JS -->
+            </div>
+            <!-- Direct Serial Command Input -->
+            <form id="serial-cmd-form" class="mt-2.5 flex gap-2">
+              <input
+                id="serial-cmd-input"
+                type="text"
+                autocomplete="off"
+                placeholder="Send G-code to ESP32 (e.g. G0 X50 Y50, M3, M5, G28)..."
+                class="flex-1 theme-input rounded-xl px-3 py-2 font-mono text-xs"
+              />
+              <button type="submit" class="px-4 py-2 rounded-xl theme-btn-primary font-mono font-bold text-xs transition cursor-pointer">
+                SEND
+              </button>
+            </form>
+          </div>
+
+        </section>
+      </div>
+
+      <!-- ROW 3: PANEL 5 (HARDWARE WIRING DIAGRAM - A4988 + CNC SHIELD V3) & PANEL 6 (DHT22 + FIRMWARE) -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        <!-- PANEL 5: HARDWARE WIRING & INTERACTIVE SCHEMATIC (A4988 + CNC SHIELD V3) -->
+        <section class="xl:col-span-7 theme-card rounded-3xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b theme-border">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-lg theme-primary-soft theme-text-primary font-mono text-xs font-bold">PANEL 5</span>
+              <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">Hardware Wiring • ESP32-C5 + CNC Shield V3 (A4988)</h2>
+            </div>
+            <span class="text-[11px] font-mono theme-text-secondary font-bold">⚠ NEVER CONNECT 12V–24V VMOT DIRECTLY TO ESP32</span>
+          </div>
+
+          <!-- Component Filter Pills -->
+          <div class="flex flex-wrap gap-1.5 mb-4 font-mono text-[11px]">
+            <button type="button" onclick="highlightHardware('ALL')" class="hw-btn px-3 py-1.5 rounded-xl theme-btn-primary font-bold transition cursor-pointer" data-hw="ALL">All Connections</button>
+            <button type="button" onclick="highlightHardware('PSU')" class="hw-btn px-3 py-1.5 rounded-xl theme-soft theme-text-main border theme-border transition cursor-pointer" data-hw="PSU">12V–24V PSU & LM2596</button>
+            <button type="button" onclick="highlightHardware('MOTOR')" class="hw-btn px-3 py-1.5 rounded-xl theme-soft theme-text-main border theme-border transition cursor-pointer" data-hw="MOTOR">CNC Shield V3 & A4988</button>
+            <button type="button" onclick="highlightHardware('SENSOR')" class="hw-btn px-3 py-1.5 rounded-xl theme-soft theme-text-main border theme-border transition cursor-pointer" data-hw="SENSOR">DHT22 & 3x LEDs</button>
+            <button type="button" onclick="highlightHardware('SERVO')" class="hw-btn px-3 py-1.5 rounded-xl theme-soft theme-text-main border theme-border transition cursor-pointer" data-hw="SERVO">Pen Servo & Encoder</button>
+          </div>
+
+          <!-- Interactive SVG Wiring Schematic for CNC Shield V3 + A4988 -->
+          <div class="theme-soft rounded-2xl p-3 overflow-x-auto">
+            <svg viewBox="0 0 760 335" class="w-full min-w-[600px] h-auto font-mono">
+              <defs>
+                <pattern id="schemGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(128,128,128,0.16)" stroke-width="1"/>
+                </pattern>
+              </defs>
+              <rect width="760" height="335" fill="url(#schemGrid)" rx="12"/>
+
+              <!-- WIRES -->
+              <g class="hw-wire" data-group="PSU MOTOR">
+                <path d="M 150 55 L 220 55 L 220 135 L 420 135" fill="none" stroke="#ef4444" stroke-width="3.5"/>
+                <text x="158" y="47" fill="#dc2626" font-size="8.5" font-weight="bold">12V-24V VMOT</text>
+              </g>
+
+              <g class="hw-wire" data-group="PSU SERVO">
+                <path d="M 350 65 L 405 65 L 405 100 L 285 100 L 285 165" fill="none" stroke="#f59e0b" stroke-width="3"/>
+                <path d="M 405 65 L 610 65 L 610 155" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+                <text x="358" y="57" fill="#d97706" font-size="8.5" font-weight="bold">5V REGULATED</text>
+              </g>
+
+              <g class="hw-wire" data-group="MOTOR">
+                <path d="M 350 205 L 420 205" fill="none" stroke="#10b981" stroke-width="2.6"/>
+                <path d="M 350 222 L 420 222" fill="none" stroke="#059669" stroke-width="2.6"/>
+                <path d="M 350 239 L 420 239" fill="none" stroke="#0d9488" stroke-width="2.6"/>
+                <path d="M 565 215 L 610 215" fill="none" stroke="#ea580c" stroke-width="3"/>
+                <text x="353" y="199" fill="#059669" font-size="8" font-weight="bold">X/Y STEP,DIR,EN</text>
+              </g>
+
+              <g class="hw-wire" data-group="SENSOR">
+                <path d="M 215 245 L 155 245" fill="none" stroke="#06b6d4" stroke-width="2.5"/>
+                <path d="M 285 275 L 285 302 L 420 302" fill="none" stroke="#10b981" stroke-width="2.5"/>
+                <text x="160" y="238" fill="#0891b2" font-size="8.5" font-weight="bold">DHT22 DATA</text>
+              </g>
+
+              <g class="hw-wire" data-group="SERVO">
+                <path d="M 350 180 L 610 180" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-dasharray="5,3"/>
+                <text x="435" y="173" fill="#db2777" font-size="8" font-weight="bold">Z+ / SPINDLE PWM SERVO (M3/M5)</text>
+              </g>
+
+              <!-- COMPONENT BOXES -->
+              <g transform="translate(20, 25)">
+                <rect width="130" height="75" rx="10" fill="#ffffff" stroke="#ef4444" stroke-width="2"/>
+                <text x="10" y="20" fill="#b91c1c" font-size="10" font-weight="bold">12V–24V DC PSU</text>
+                <text x="10" y="36" fill="#475569" font-size="8.5">Shield Motor Power</text>
+                <circle cx="115" cy="30" r="5" fill="#ef4444"/>
+                <circle cx="115" cy="52" r="5" fill="#475569"/>
+                <text x="72" y="33" fill="#b91c1c" font-size="8">+VMOT</text>
+                <text x="82" y="55" fill="#334155" font-size="8">GND</text>
+              </g>
+
+              <g transform="translate(220, 25)">
+                <rect width="130" height="65" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
+                <text x="10" y="20" fill="#b45309" font-size="10" font-weight="bold">LM2596 BUCK</text>
+                <text x="10" y="36" fill="#475569" font-size="8.5">VMOT → 5.0V Step-Down</text>
+                <text x="10" y="51" fill="#059669" font-size="8.5" font-weight="bold">OUT: 5.02V STABLE</text>
+              </g>
+
+              <g transform="translate(215, 165)">
+                <rect width="135" height="110" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="2.5"/>
+                <text x="12" y="22" fill="#065f46" font-size="11" font-weight="bold">ESP32-C5</text>
+                <text x="12" y="37" fill="#047857" font-size="8.5">Web Serial + WiFi MCU</text>
+                <text x="12" y="55" fill="#1e293b" font-size="8">• G-Code Serial Parser</text>
+                <text x="12" y="69" fill="#1e293b" font-size="8">• AccelStepper X/Y</text>
+                <text x="12" y="83" fill="#1e293b" font-size="8">• Shared EN (Active LOW)</text>
+                <text x="12" y="97" fill="#1e293b" font-size="8">• 3.3V Logic Level</text>
+              </g>
+
+              <g transform="translate(420, 118)">
+                <rect width="145" height="142" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+                <text x="10" y="19" fill="#9a3412" font-size="9.5" font-weight="bold">CNC SHIELD V3 + A4988</text>
+                <text x="10" y="34" fill="#475569" font-size="8">Dual A4988 (X &amp; Y Slots)</text>
+                <text x="10" y="50" fill="#b91c1c" font-size="8">VMOT: 12-24V + 100µF</text>
+                <text x="10" y="65" fill="#1e293b" font-size="8">X: STEP D2 • DIR D5</text>
+                <text x="10" y="80" fill="#1e293b" font-size="8">Y: STEP D3 • DIR D6</text>
+                <text x="10" y="95" fill="#047857" font-size="8">EN: D8 (Active LOW)</text>
+                <text x="10" y="110" fill="#475569" font-size="8">MS1/2/3 Jumpers: 1/16</text>
+                <text x="10" y="125" fill="#9a3412" font-size="8">VREF Pot: ~0.65V Limit</text>
+              </g>
+
+              <g transform="translate(610, 195)">
+                <rect width="130" height="75" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+                <text x="10" y="20" fill="#9a3412" font-size="10" font-weight="bold">NEMA 17 + ENC</text>
+                <text x="10" y="36" fill="#475569" font-size="8.5">1.8° Stepper (2B 2A 1A 1B)</text>
+                <text x="10" y="52" fill="#047857" font-size="8.5" font-weight="bold">Quadrature Feedback</text>
+              </g>
+
+              <g transform="translate(610, 125)">
+                <rect width="130" height="58" rx="10" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+                <text x="10" y="20" fill="#9d174d" font-size="10" font-weight="bold">PEN SERVO (SG90)</text>
+                <text x="10" y="36" fill="#831843" font-size="8.5">Z+ / SpnEn • M5 Up / M3 Dn</text>
+              </g>
+
+              <g transform="translate(20, 210)">
+                <rect width="135" height="65" rx="10" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+                <text x="10" y="20" fill="#0e7490" font-size="10" font-weight="bold">DHT22 SENSOR</text>
+                <text x="10" y="36" fill="#475569" font-size="8.5">A4988 Heatsink Monitor</text>
+                <text x="10" y="51" fill="#047857" font-size="8">10kΩ Pull-up Resistor</text>
+              </g>
+
+              <g transform="translate(420, 276)">
+                <rect width="320" height="44" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+                <circle cx="25" cy="22" r="7" fill="#10b981"/>
+                <text x="38" y="25" fill="#065f46" font-size="8.5" font-weight="bold">GREEN (&lt;30°C)</text>
+                <circle cx="132" cy="22" r="7" fill="#eab308"/>
+                <text x="145" y="25" fill="#854d0e" font-size="8.5" font-weight="bold">YELLOW (30-35°C)</text>
+                <circle cx="246" cy="22" r="7" fill="#ef4444"/>
+                <text x="259" y="25" fill="#991b1b" font-size="8.5" font-weight="bold">RED (&gt;35°C)</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Hardware Pinout Summary Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-xs font-mono">
+            <div class="theme-soft rounded-2xl p-3">
+              <span class="theme-text-secondary font-bold block mb-1">1. CNC Shield V3 Power</span>
+              <p class="theme-text-muted text-[11px] leading-relaxed">
+                12V–24V DC connects to CNC Shield V3 blue terminal (+/−) with 100µF decoupling capacitors under each A4988 module.
+              </p>
+            </div>
+            <div class="theme-soft rounded-2xl p-3">
+              <span class="theme-text-primary font-bold block mb-1">2. A4988 &amp; Microstepping</span>
+              <p class="theme-text-muted text-[11px] leading-relaxed">
+                Install all 3 jumpers (MS1, MS2, MS3) under X &amp; Y A4988 sockets for 1/16 microstepping. Tune VREF pot to ~0.65V.
+              </p>
+            </div>
+            <div class="theme-soft rounded-2xl p-3">
+              <span class="theme-text-main font-bold block mb-1">3. Shared EN &amp; Servo</span>
+              <p class="theme-text-muted text-[11px] leading-relaxed">
+                CNC Shield EN pin (active LOW) enables all A4988 drivers simultaneously. Pen Servo connects to Z+ / Spindle PWM header.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 6: DHT22 ENVIRONMENTAL MONITORING & ARDUINO FIRMWARE (A4988 + SERIAL G-CODE) -->
+        <section class="xl:col-span-5 theme-card rounded-3xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-3 mb-4 border-b theme-border">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-xs font-bold">PANEL 6</span>
+                <h2 class="text-sm font-extrabold tracking-wider uppercase theme-text-main">DHT22 A4988 Thermal &amp; Serial Firmware</h2>
+              </div>
+              <span class="text-[11px] font-mono theme-text-muted">TELEMETRY</span>
+            </div>
+
+            <!-- DHT22 Readings -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="theme-primary-soft rounded-2xl p-3.5 text-center">
+                <span class="text-[10px] font-mono uppercase theme-text-primary font-bold block">A4988 / AMBIENT TEMP</span>
+                <span id="dht-temp-display" class="text-2xl font-mono font-extrabold theme-text-main mt-1 block">26.5°C</span>
+              </div>
+              <div class="theme-secondary-soft rounded-2xl p-3.5 text-center">
+                <span class="text-[10px] font-mono uppercase theme-text-secondary font-bold block">HUMIDITY (DHT22)</span>
+                <span id="dht-hum-display" class="text-2xl font-mono font-extrabold theme-text-secondary mt-1 block">62%</span>
+              </div>
+            </div>
+
+            <!-- Sliders -->
+            <div class="space-y-3 theme-soft rounded-2xl p-3.5 mb-4">
+              <div>
+                <div class="flex justify-between text-[11px] font-mono mb-1">
+                  <span class="theme-text-muted font-semibold">Simulate Temperature (15°C – 45°C)</span>
+                  <span id="slider-temp-val" class="theme-text-primary font-bold">26.5°C</span>
+                </div>
+                <input id="temp-slider" type="range" min="15" max="45" step="0.5" value="26.5" class="w-full cursor-pointer">
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] font-mono mb-1">
+                  <span class="theme-text-muted font-semibold">Simulate Humidity (30% – 90%)</span>
+                  <span id="slider-hum-val" class="theme-text-secondary font-bold">62%</span>
+                </div>
+                <input id="hum-slider" type="range" min="30" max="90" step="1" value="62" class="w-full cursor-pointer">
+              </div>
+              <div class="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px] font-bold">
+                <button type="button" onclick="setTestTemp(25)" class="py-1.5 rounded-xl theme-primary-soft theme-text-main cursor-pointer">Test 25°C</button>
+                <button type="button" onclick="setTestTemp(32.5)" class="py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 cursor-pointer">Test 32.5°C</button>
+                <button type="button" onclick="setTestTemp(38)" class="py-1.5 rounded-xl theme-secondary-soft theme-text-secondary cursor-pointer">Test 38°C</button>
+              </div>
+            </div>
+
+            <!-- Active LED Indicator Banner -->
+            <div id="led-status-box" class="rounded-2xl p-3 theme-primary-soft flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <span id="led-dot" class="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
+                <div>
+                  <div id="led-title" class="font-mono text-xs font-extrabold theme-text-main">GREEN LED ACTIVE — NORMAL TEMP</div>
+                  <div id="led-desc" class="font-mono text-[11px] theme-text-primary">Temp &lt; 30°C • A4988 Stepper Drivers Cool &amp; Stable</div>
+                </div>
+              </div>
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded theme-card theme-text-main border theme-border font-bold">220Ω</span>
+            </div>
+          </div>
+
+          <!-- ESP32-C5 + CNC Shield V3 (A4988) Arduino Firmware -->
+          <div class="theme-soft rounded-2xl p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono font-bold theme-text-main">ESP32-C5 + CNC SHIELD V3 (A4988) FIRMWARE</span>
+              <button id="btn-copy-arduino" type="button" class="px-2.5 py-1 rounded-lg theme-btn-primary font-mono text-[11px] font-bold transition cursor-pointer">
+                Copy Code
+              </button>
+            </div>
+            <pre id="arduino-code-block" class="text-[10.5px] font-mono bg-slate-900 text-emerald-300 rounded-xl p-3 overflow-x-auto max-h-40 leading-relaxed select-all"><code>#include &lt;AccelStepper.h&gt;
+#include &lt;ESP32Servo.h&gt;
+#include &lt;DHT.h&gt;
+
+// ESP32-C5 -&gt; CNC Shield V3 (A4988 Stepper Drivers) Pin Map
+#define X_STEP_PIN  2   // Shield D2
+#define X_DIR_PIN   3   // Shield D5
+#define Y_STEP_PIN  4   // Shield D3
+#define Y_DIR_PIN   5   // Shield D6
+#define SHIELD_EN   11  // Shield D8 (Active LOW enables A4988)
+#define SERVO_PIN   6   // Shield Z+ / SpnEn PWM
+#define DHT_PIN     7
+#define LED_GREEN   8
+#define LED_YELLOW  9
+#define LED_RED     10
+
+const float STEPS_PER_MM = 80.0; // 200 steps * 16 microsteps / 40mm belt
+AccelStepper stepperX(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN);
+AccelStepper stepperY(AccelStepper::DRIVER, Y_STEP_PIN, Y_DIR_PIN);
+Servo penServo;
+DHT dht(DHT_PIN, DHT22);
+
+void penUp()   { penServo.write(90); delay(100); } // M5
+void penDown() { penServo.write(25); delay(100); } // M3
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(SHIELD_EN, OUTPUT);
+  digitalWrite(SHIELD_EN, LOW); // Enable A4988 drivers
+  dht.begin();
+  penServo.attach(SERVO_PIN);
+  penUp();
+  stepperX.setMaxSpeed(2400); stepperX.setAcceleration(1200);
+  stepperY.setMaxSpeed(2400); stepperY.setAcceleration(1200);
+  pinMode(LED_GREEN, OUTPUT); pinMode(LED_YELLOW, OUTPUT); pinMode(LED_RED, OUTPUT);
+  Serial.println("ESP32-C5 CNC Shield V3 (A4988) Ready");
+}
+
+void loop() {
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    if (cmd == "M5") { penUp(); Serial.println("ok"); }
+    else if (cmd == "M3") { penDown(); Serial.println("ok"); }
+    else if (cmd == "M17") { digitalWrite(SHIELD_EN, LOW); Serial.println("ok"); }
+    else if (cmd == "M18") { digitalWrite(SHIELD_EN, HIGH); Serial.println("ok"); }
+    else if (cmd == "G28") {
+      penUp();
+      stepperX.moveTo(18 * STEPS_PER_MM);
+      stepperY.moveTo(18 * STEPS_PER_MM);
+      while (stepperX.distanceToGo() != 0 || stepperY.distanceToGo() != 0) {
+        stepperX.run(); stepperY.run();
+      }
+      Serial.println("ok");
+    }
+    else if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
+      int xIdx = cmd.indexOf('X'), yIdx = cmd.indexOf('Y');
+      if (xIdx &gt;= 0) stepperX.moveTo(cmd.substring(xIdx + 1).toFloat() * STEPS_PER_MM);
+      if (yIdx &gt;= 0) stepperY.moveTo(cmd.substring(yIdx + 1).toFloat() * STEPS_PER_MM);
+      while (stepperX.distanceToGo() != 0 || stepperY.distanceToGo() != 0) {
+        stepperX.run(); stepperY.run();
+      }
+      Serial.println("ok");
+    }
+  }
+  float temp = dht.readTemperature();
+  if (!isnan(temp)) {
+    digitalWrite(LED_GREEN,  temp &lt; 30.0);
+    digitalWrite(LED_YELLOW, temp &gt;= 30.0 &amp;&amp; temp &lt;= 35.0);
+    digitalWrite(LED_RED,    temp &gt; 35.0);
+  }
+}</code></pre>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="theme-card px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 font-mono text-xs font-bold theme-text-main">
+      <span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--secondary);"></span>
+      <span id="toast-message">System Notification</span>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 0. SECURE OPERATOR LOGIN GATE (ID: 0000, PASSWORD: 1111 - NO HINTS)
+    // =========================================================================
+    const _cred = { u: '0000', p: '1111' };
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const idVal = document.getElementById('login-id').value.trim();
+      const passVal = document.getElementById('login-pass').value.trim();
+      const errBox = document.getElementById('login-error-box');
+      const errMsg = document.getElementById('login-error-msg');
+      const card = document.getElementById('login-card');
+
+      if (idVal === _cred.u && passVal === _cred.p) {
+        errBox.classList.add('hidden');
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app-shell').classList.remove('hidden');
+        resizeCanvas();
+        appendSerialLog('[AUTH] Operator session authenticated. Welcome to SPM Edition V4.');
+      } else {
+        errMsg.textContent = 'Invalid credential';
+        errBox.classList.remove('hidden');
+        card.classList.remove('animate-shake');
+        void card.offsetWidth;
+        card.classList.add('animate-shake');
+        document.getElementById('login-pass').value = '';
+        document.getElementById('login-pass').focus();
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      if (serialState.connected) {
+        await disconnectEsp32Serial();
+      }
+      plotter.isRunning = false;
+      document.getElementById('login-id').value = '';
+      document.getElementById('login-pass').value = '';
+      document.getElementById('login-error-box').classList.add('hidden');
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('login-overlay').classList.remove('hidden');
+    });
+
+    // =========================================================================
+    // 0B. WEB SERIAL API (LIVE ESP32 + CNC SHIELD V3 + A4988 G-CODE STREAMER)
+    // =========================================================================
+    const serialState = {
+      port: null,
+      reader: null,
+      keepReading: false,
+      connected: false,
+      txQueue: [],
+      isSending: false,
+      lastPenSent: null
+    };
+
+    function updateSerialUI() {
+      const headerBtnText = document.getElementById('header-serial-btn-text');
+      const headerDot = document.getElementById('header-serial-dot');
+      const modeBadge = document.getElementById('serial-mode-badge');
+      const panel4Status = document.getElementById('panel4-serial-status');
+      const panel4Subtitle = document.getElementById('serial-port-subtitle');
+      const panel4Btn = document.getElementById('btn-panel4-serial');
+
+      if (serialState.connected) {
+        headerBtnText.textContent = 'DISCONNECT';
+        headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        modeBadge.textContent = 'USB SERIAL CONNECTED';
+        modeBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-secondary-soft theme-text-secondary font-bold';
+        panel4Status.textContent = '● ESP32 USB SERIAL ONLINE';
+        panel4Subtitle.textContent = `Connected @ ${document.getElementById('header-baud-select').value} baud • Live G-Code Streaming Active`;
+        panel4Btn.textContent = 'Disconnect USB';
+        panel4Btn.className = 'px-3 py-1.5 rounded-xl theme-btn-secondary font-bold text-[11px] transition cursor-pointer';
+      } else {
+        headerBtnText.textContent = 'CONNECT ESP32';
+        headerDot.className = 'w-2 h-2 rounded-full bg-amber-300';
+        modeBadge.textContent = 'SIMULATION MODE';
+        modeBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-primary-soft theme-text-primary font-bold';
+        panel4Status.textContent = '● SIMULATION MODE';
+        panel4Subtitle.textContent = 'USB Serial: Disconnected (Click Connect to drive ESP32)';
+        panel4Btn.textContent = 'Connect USB Port';
+        panel4Btn.className = 'px-3 py-1.5 rounded-xl theme-btn-primary font-bold text-[11px] transition cursor-pointer';
+      }
+    }
+
+    async function connectEsp32Serial() {
+      if (!('serial' in navigator)) {
+        showToast('Web Serial API requires Chrome or Edge over HTTPS/localhost.');
+        appendSerialLog('[ERROR] navigator.serial not supported in this browser.');
+        return;
+      }
+
+      try {
+        serialState.port = await navigator.serial.requestPort();
+        const baudRate = parseInt(document.getElementById('header-baud-select').value, 10) || 115200;
+        await serialState.port.open({ baudRate });
+
+        serialState.connected = true;
+        serialState.keepReading = true;
+        serialState.txQueue = [];
+        serialState.isSending = false;
+        serialState.lastPenSent = null;
+
+        updateSerialUI();
+        appendSerialLog(`[USB SERIAL] Connected to ESP32-C5 CNC Shield V3 at ${baudRate} baud.`);
+        showToast(`Connected to ESP32 (${baudRate} baud)`);
+
+        // Initialize G-code units & absolute positioning
+        sendSerialGcode('G21');
+        sendSerialGcode('G90');
+        sendSerialGcode('M17');
+        sendSerialGcode('M5');
+
+        readEsp32SerialLoop();
+      } catch (err) {
+        appendSerialLog(`[USB SERIAL] Connection cancelled or failed: ${err.message}`);
+      }
+    }
+
+    async function disconnectEsp32Serial() {
+      serialState.keepReading = false;
+      serialState.txQueue = [];
+      try {
+        if (serialState.reader) {
+          await serialState.reader.cancel();
+          serialState.reader = null;
+        }
+        if (serialState.port) {
+          await serialState.port.close();
+          serialState.port = null;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+      serialState.connected = false;
+      updateSerialUI();
+      appendSerialLog('[USB SERIAL] ESP32 port disconnected.');
+      showToast('ESP32 Serial Disconnected');
+    }
+
+    async function readEsp32SerialLoop() {
+      const decoder = new TextDecoderStream();
+      serialState.port.readable.pipeTo(decoder.writable);
+      serialState.reader = decoder.readable.getReader();
+      let rxBuf = '';
+
+      try {
+        while (serialState.keepReading) {
+          const { value, done } = await serialState.reader.read();
+          if (done) break;
+          if (value) {
+            rxBuf += value;
+            const lines = rxBuf.split(/\r?\n/);
+            rxBuf = lines.pop();
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              appendSerialLog(`<span class="text-cyan-300">[ESP32 RX] ${trimmed}</span>`);
+
+              // Parse optional live DHT22 telemetry from ESP32: e.g. "DHT:27.5,60"
+              if (trimmed.startsWith('DHT:')) {
+                const parts = trimmed.replace('DHT:', '').split(',');
+                const t = parseFloat(parts[0]);
+                const h = parseInt(parts[1], 10);
+                if (!Number.isNaN(t) && !Number.isNaN(h)) {
+                  document.getElementById('temp-slider').value = t;
+                  document.getElementById('hum-slider').value = h;
+                  updateDHT22(t, h);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (serialState.keepReading) {
+          appendSerialLog(`[USB SERIAL] RX Error: ${err.message}`);
+        }
+      } finally {
+        if (serialState.reader) serialState.reader.releaseLock();
+      }
+    }
+
+    function sendSerialGcode(cmd, silent = false) {
+      const clean = cmd.trim();
+      if (!clean) return;
+
+      if (!serialState.connected || !serialState.port || !serialState.port.writable) {
+        if (!silent) {
+          appendSerialLog(`<span class="text-amber-300">[SIM TX] ${clean}</span>`);
+        }
+        return;
+      }
+
+      // Prevent unbounded queue overflow during high-speed vector segments
+      if (serialState.txQueue.length > 400) {
+        serialState.txQueue.shift();
+      }
+      serialState.txQueue.push({ cmd: clean, silent });
+      processSerialTxQueue();
+    }
+
+    async function processSerialTxQueue() {
+      if (serialState.isSending || serialState.txQueue.length === 0) return;
+      if (!serialState.connected || !serialState.port || !serialState.port.writable) {
+        serialState.txQueue = [];
+        return;
+      }
+
+      serialState.isSending = true;
+      const encoder = new TextEncoder();
+      const writer = serialState.port.writable.getWriter();
+
+      try {
+        while (serialState.txQueue.length > 0 && serialState.connected) {
+          const item = serialState.txQueue.shift();
+          await writer.write(encoder.encode(item.cmd + '\n'));
+          if (!item.silent) {
+            appendSerialLog(`<span class="text-emerald-300">[ESP32 TX] ${item.cmd}</span>`);
+          }
+        }
+      } catch (err) {
+        appendSerialLog(`[USB SERIAL] TX Error: ${err.message}`);
+      } finally {
+        writer.releaseLock();
+        serialState.isSending = false;
+      }
+    }
+
+    // =========================================================================
+    // 1. 5 BUILT-IN THEMES (UI + 300x300MM PLOTTER PAPER & INK TOKENS)
+    // =========================================================================
+    const APP_THEMES = {
+      matcha: {
+        name: 'STRAWBERRY MATCHA',
+        vars: {
+          '--bg-outer': '#4F7754',
+          '--bg-header': 'rgba(249, 245, 240, 0.96)',
+          '--bg-card': '#FFFCF9',
+          '--bg-soft': '#F9F5F0',
+          '--bg-primary-soft': '#E7EFE4',
+          '--bg-secondary-soft': '#FBEAE9',
+          '--primary': '#4F7754',
+          '--primary-hover': '#3F6244',
+          '--secondary': '#D96B78',
+          '--secondary-hover': '#C45663',
+          '--text-main': '#233326',
+          '--text-muted': '#5A6E5E',
+          '--text-on-primary': '#FFFCF9',
+          '--border': '#DCE4D8',
+          '--border-strong': '#B9CCB3',
+          '--shadow-card': '0 14px 32px -8px rgba(24, 42, 27, 0.28)',
+          '--paper-bg': '#FFFCF9',
+          '--paper-grid-major': 'rgba(79, 119, 84, 0.26)',
+          '--paper-grid-minor': 'rgba(133, 173, 138, 0.17)',
+          '--paper-zone-top': 'rgba(231, 239, 228, 0.55)',
+          '--paper-zone-graph': 'rgba(251, 234, 233, 0.22)',
+          '--ink-axis': '#233326',
+          '--ink-tick': '#4F7754',
+          '--ink-curve1': '#D96B78',
+          '--ink-curve2': '#3B7A57',
+          '--ink-curve3': '#2563EB',
+          '--ink-curve4': '#D97706',
+          '--ink-shade': 'rgba(79, 119, 84, 0.20)'
+        }
+      },
+      dark: {
+        name: 'DARK MODE (MIDNIGHT LAB)',
+        vars: {
+          '--bg-outer': '#090D16',
+          '--bg-header': 'rgba(15, 23, 42, 0.95)',
+          '--bg-card': '#111827',
+          '--bg-soft': '#1E293B',
+          '--bg-primary-soft': 'rgba(16, 185, 129, 0.16)',
+          '--bg-secondary-soft': 'rgba(56, 189, 248, 0.16)',
+          '--primary': '#10B981',
+          '--primary-hover': '#059669',
+          '--secondary': '#38BDF8',
+          '--secondary-hover': '#0284C7',
+          '--text-main': '#F1F5F9',
+          '--text-muted': '#94A3B8',
+          '--text-on-primary': '#062016',
+          '--border': '#334155',
+          '--border-strong': '#475569',
+          '--shadow-card': '0 16px 36px -8px rgba(0, 0, 0, 0.65)',
+          '--paper-bg': '#0F172A',
+          '--paper-grid-major': 'rgba(56, 189, 248, 0.22)',
+          '--paper-grid-minor': 'rgba(148, 163, 184, 0.10)',
+          '--paper-zone-top': 'rgba(30, 41, 59, 0.70)',
+          '--paper-zone-graph': 'rgba(15, 23, 42, 0.45)',
+          '--ink-axis': '#F8FAFC',
+          '--ink-tick': '#94A3B8',
+          '--ink-curve1': '#38BDF8',
+          '--ink-curve2': '#10B981',
+          '--ink-curve3': '#F472B6',
+          '--ink-curve4': '#FBBF24',
+          '--ink-shade': 'rgba(56, 189, 248, 0.22)'
+        }
+      },
+      boy: {
+        name: 'BOY EDITION (COBALT CARBON)',
+        vars: {
+          '--bg-outer': '#0F172A',
+          '--bg-header': 'rgba(248, 250, 252, 0.96)',
+          '--bg-card': '#FFFFFF',
+          '--bg-soft': '#F1F5F9',
+          '--bg-primary-soft': '#DBEAFE',
+          '--bg-secondary-soft': '#FEF3C7',
+          '--primary': '#2563EB',
+          '--primary-hover': '#1D4ED8',
+          '--secondary': '#EA580C',
+          '--secondary-hover': '#C2410C',
+          '--text-main': '#0F172A',
+          '--text-muted': '#475569',
+          '--text-on-primary': '#FFFFFF',
+          '--border': '#CBD5E1',
+          '--border-strong': '#93C5FD',
+          '--shadow-card': '0 14px 32px -8px rgba(15, 23, 42, 0.42)',
+          '--paper-bg': '#FFFFFF',
+          '--paper-grid-major': 'rgba(37, 99, 235, 0.22)',
+          '--paper-grid-minor': 'rgba(100, 116, 139, 0.14)',
+          '--paper-zone-top': 'rgba(219, 234, 254, 0.55)',
+          '--paper-zone-graph': 'rgba(241, 245, 249, 0.35)',
+          '--ink-axis': '#0F172A',
+          '--ink-tick': '#2563EB',
+          '--ink-curve1': '#2563EB',
+          '--ink-curve2': '#EA580C',
+          '--ink-curve3': '#059669',
+          '--ink-curve4': '#7C3AED',
+          '--ink-shade': 'rgba(37, 99, 235, 0.18)'
+        }
+      },
+      lavender: {
+        name: 'BLUEBERRY LAVENDER',
+        vars: {
+          '--bg-outer': '#4338CA',
+          '--bg-header': 'rgba(250, 248, 255, 0.96)',
+          '--bg-card': '#FFFFFF',
+          '--bg-soft': '#F5F3FF',
+          '--bg-primary-soft': '#EDE9FE',
+          '--bg-secondary-soft': '#FCE7F3',
+          '--primary': '#6366F1',
+          '--primary-hover': '#4F46E5',
+          '--secondary': '#EC4899',
+          '--secondary-hover': '#DB2777',
+          '--text-main': '#1E1B4B',
+          '--text-muted': '#5B5675',
+          '--text-on-primary': '#FFFFFF',
+          '--border': '#DDD6FE',
+          '--border-strong': '#C4B5FD',
+          '--shadow-card': '0 14px 32px -8px rgba(49, 46, 129, 0.32)',
+          '--paper-bg': '#FAF8FF',
+          '--paper-grid-major': 'rgba(99, 102, 241, 0.22)',
+          '--paper-grid-minor': 'rgba(167, 139, 250, 0.15)',
+          '--paper-zone-top': 'rgba(237, 233, 254, 0.58)',
+          '--paper-zone-graph': 'rgba(252, 231, 243, 0.25)',
+          '--ink-axis': '#1E1B4B',
+          '--ink-tick': '#6366F1',
+          '--ink-curve1': '#EC4899',
+          '--ink-curve2': '#6366F1',
+          '--ink-curve3': '#0D9488',
+          '--ink-curve4': '#D97706',
+          '--ink-shade': 'rgba(99, 102, 241, 0.18)'
+        }
+      },
+      exam: {
+        name: 'CLASSIC EXAM GRAPH PAPER',
+        vars: {
+          '--bg-outer': '#1B4332',
+          '--bg-header': 'rgba(255, 255, 255, 0.97)',
+          '--bg-card': '#FFFFFF',
+          '--bg-soft': '#F4F7F5',
+          '--bg-primary-soft': '#D8F3DC',
+          '--bg-secondary-soft': '#FEE2E2',
+          '--primary': '#2D6A4F',
+          '--primary-hover': '#1B4332',
+          '--secondary': '#DC2626',
+          '--secondary-hover': '#B91C1C',
+          '--text-main': '#111827',
+          '--text-muted': '#4B5563',
+          '--text-on-primary': '#FFFFFF',
+          '--border': '#D1D5DB',
+          '--border-strong': '#95D5B2',
+          '--shadow-card': '0 14px 32px -8px rgba(15, 35, 25, 0.36)',
+          '--paper-bg': '#FFFFFF',
+          '--paper-grid-major': 'rgba(45, 106, 79, 0.34)',
+          '--paper-grid-minor': 'rgba(82, 183, 136, 0.20)',
+          '--paper-zone-top': 'rgba(216, 243, 220, 0.48)',
+          '--paper-zone-graph': 'rgba(255, 255, 255, 0.0)',
+          '--ink-axis': '#111827',
+          '--ink-tick': '#2D6A4F',
+          '--ink-curve1': '#111827',
+          '--ink-curve2': '#DC2626',
+          '--ink-curve3': '#2563EB',
+          '--ink-curve4': '#D97706',
+          '--ink-shade': 'rgba(107, 114, 128, 0.25)'
+        }
+      }
+    };
+
+    let activeThemeKey = 'matcha';
+
+    function applyTheme(themeKey) {
+      const theme = APP_THEMES[themeKey] || APP_THEMES.matcha;
+      activeThemeKey = themeKey;
+      const root = document.documentElement;
+      Object.entries(theme.vars).forEach(([prop, val]) => {
+        root.style.setProperty(prop, val);
+      });
+      document.getElementById('theme-badge-label').textContent = theme.name;
+      if (currentSolvedSystem) {
+        updateCurveLegend(currentSolvedSystem.equations);
+        if (!plotter.isRunning) {
+          const hadCompleted = plotter.completedStrokes.length > 0;
+          plotter.plannedStrokes = generatePlotterStrokes(currentSolvedSystem, 'ALL');
+          if (hadCompleted) {
+            plotter.completedStrokes = [...plotter.plannedStrokes];
+          }
+          renderPlotterCanvas();
+        }
+      }
+      appendSerialLog(`[THEME] Switched interface & plotter ink palette to ${theme.name}.`);
+    }
+
+    // =========================================================================
+    // 2. CURATED ENGLISH SPM & TRIAL QUESTION BANK (INCLUDING 3-EQ MRSM Q12(b))
+    // =========================================================================
+    const SPM_QUESTION_BANK = [
+      {
+        id: 'mrsm-12b-3eq',
+        source: 'TRIAL',
+        badge: 'MRSM TRIAL Q12(b)',
+        topic: 'INEQUALITY',
+        topicName: 'Linear Inequalities in Two Variables (Form 4)',
+        equations: ['5x + 6y = 120', 'x + y = 10', 'x = y'],
+        prompt: 'MRSM Trial Q12(b): Draw 5x + 6y = 120, x + y = 10, and x = y. Shade the region satisfying 5x + 6y ≤ 120, x + y ≥ 10, and y ≤ x (x ≥ 0, y ≥ 0).',
+        shadeConfig: {
+          enabled: true,
+          testFn: (x, y) => (5 * x + 6 * y <= 120.05) && (x + y >= 9.95) && (y <= x + 0.05) && x >= 0 && y >= 0
+        }
+      },
+      {
+        id: 'sbp-ineq-3eq',
+        source: 'TRIAL',
+        badge: 'SBP TRIAL Q13',
+        topic: 'INEQUALITY',
+        topicName: 'Linear Inequalities System (Form 4)',
+        equations: ['2x + 3y = 60', 'x + 2y = 20', 'y = x'],
+        prompt: 'SBP Trial Q13: Plot 2x + 3y = 60, x + 2y = 20, and y = x. Shade the region satisfying 2x + 3y ≤ 60, x + 2y ≥ 20, and y ≤ x.',
+        shadeConfig: {
+          enabled: true,
+          testFn: (x, y) => (2 * x + 3 * y <= 60.05) && (x + 2 * y >= 19.95) && (y <= x + 0.05) && x >= 0 && y >= 0
+        }
+      },
+      {
+        id: 'spm23-quad',
+        source: 'SPM',
+        badge: 'SPM 2023 PAPER 2',
+        topic: 'QUADRATIC',
+        topicName: 'Quadratic Functions & Equations (Form 4 Ch. 1)',
+        equations: ['y = x^2 - 4x + 3'],
+        prompt: 'SPM 2023 P2: Given f(x) = x^2 - 4x + 3. Find the x-intercepts, y-intercept, axis of symmetry, and minimum point.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'sbp24-quad',
+        source: 'TRIAL',
+        badge: 'SBP TRIAL 2024',
+        topic: 'QUADRATIC',
+        topicName: 'Quadratic Graphs (Form 4 Ch. 1)',
+        equations: ['y = -x^2 + 6x - 5'],
+        prompt: 'SBP Trial 2024: Sketch the graph of f(x) = -x^2 + 6x - 5 and determine its maximum point and roots.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'spm23-simul',
+        source: 'SPM',
+        badge: 'SPM 2023 PAPER 2',
+        topic: 'SIMULTANEOUS',
+        topicName: 'Simultaneous Linear Equations (Form 4)',
+        equations: ['2x + y = 7', 'x - y = 2'],
+        prompt: 'SPM 2023 P2: Solve the simultaneous linear equations 2x + y = 7 and x - y = 2 graphically.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'johor-simul-3',
+        source: 'TRIAL',
+        badge: 'JOHOR TRIAL 2024',
+        topic: 'SIMULTANEOUS',
+        topicName: 'Multi-Line Intersection System',
+        equations: ['x + y = 6', '2x - y = 3', 'y = 3'],
+        prompt: 'Johor Trial 2024: Plot x + y = 6, 2x - y = 3, and y = 3 to verify their common intersection point (3, 3).',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'spm22-linear',
+        source: 'SPM',
+        badge: 'SPM 2022 PAPER 1',
+        topic: 'LINEAR',
+        topicName: 'Straight Lines (Form 3 Ch. 9)',
+        equations: ['y = 2x + 3'],
+        prompt: 'SPM 2022 P1: Given the straight line y = 2x + 3, determine its gradient, y-intercept, and x-intercept.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'kedah-linear',
+        source: 'TRIAL',
+        badge: 'KEDAH TRIAL 2024',
+        topic: 'LINEAR',
+        topicName: 'Parallel Straight Lines (Form 3 Ch. 9)',
+        equations: ['2y + x = 8', '2y + x = 14'],
+        prompt: 'Kedah Trial 2024: Plot parallel lines 2y + x = 8 and 2y + x = 14 and compare their gradients and intercepts.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'spm21-circle',
+        source: 'SPM',
+        badge: 'SPM 2021 PAPER 1',
+        topic: 'CIRCLE',
+        topicName: 'Circle & Locus (Form 3 Ch. 8)',
+        equations: ['x^2 + y^2 = 25'],
+        prompt: 'SPM 2021 P1: A circle locus is given by x^2 + y^2 = 25. Find its center, radius, and axis intercepts.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'mrsm-circle',
+        source: 'TRIAL',
+        badge: 'MRSM TRIAL 2024',
+        topic: 'CIRCLE',
+        topicName: 'Shifted Circle Locus',
+        equations: ['(x - 2)^2 + (y - 1)^2 = 16'],
+        prompt: 'MRSM Trial 2024: Determine the center and radius of the circle locus (x - 2)^2 + (y - 1)^2 = 16.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'spm23-trig',
+        source: 'SPM',
+        badge: 'SPM 2023 PAPER 2',
+        topic: 'TRIG',
+        topicName: 'Trigonometric Graphs (Form 5 Ch. 6)',
+        equations: ['y = 2sin(x)'],
+        prompt: 'SPM 2023 P2: Sketch y = 2sin(x) for 0° ≤ x ≤ 360° and state its amplitude and period.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'selangor-trig',
+        source: 'TRIAL',
+        badge: 'SELANGOR TRIAL 2024',
+        topic: 'TRIG',
+        topicName: 'Shifted Cosine Graph (Form 5 Ch. 6)',
+        equations: ['y = cos(2x) + 1'],
+        prompt: 'Selangor Trial 2024: Sketch y = cos(2x) + 1 for 0° ≤ x ≤ 360° and state its maximum and minimum values.',
+        shadeConfig: { enabled: false }
+      },
+      {
+        id: 'spm22-cubic',
+        source: 'SPM',
+        badge: 'SPM 2022 PAPER 2',
+        topic: 'CUBIC',
+        topicName: 'Cubic Function Graph (Form 5 Ch. 2)',
+        equations: ['y = x^3 - 4x'],
+        prompt: 'SPM 2022 P2: Plot the cubic function y = x^3 - 4x for -3 ≤ x ≤ 3 and identify all three roots.',
+        shadeConfig: { enabled: false }
+      }
+    ];
+
+    let generatedCounter = 1;
+
+    // =========================================================================
+    // 3. UNLIMITED RANDOM SPM CORE MATH QUESTION GENERATOR
+    // =========================================================================
+    function generateRandomSPMQuestion() {
+      const types = ['QUADRATIC', 'LINEAR', 'SIMULTANEOUS', 'INEQUALITY_3EQ', 'CIRCLE'];
+      const pick = types[Math.floor(Math.random() * types.length)];
+      const num = generatedCounter++;
+      const id = `gen-spm-${Date.now()}`;
+
+      if (pick === 'INEQUALITY_3EQ') {
+        const xMaxInt = [20, 24, 30][Math.floor(Math.random() * 3)];
+        const yMaxInt = [15, 20, 25][Math.floor(Math.random() * 3)];
+        const a = yMaxInt;
+        const b = xMaxInt;
+        const rhs1 = a * b;
+        const c2 = [8, 10, 12][Math.floor(Math.random() * 3)];
+        const eq1 = `${a}x + ${b}y = ${rhs1}`;
+        const eq2 = `x + y = ${c2}`;
+        const eq3 = `x = y`;
+
+        return {
+          id,
+          source: 'GENERATED',
+          badge: `PRACTICE #${num} (3-EQ)`,
+          topic: 'INEQUALITY',
+          topicName: 'Multi-Equation Linear System (Form 4)',
+          equations: [eq1, eq2, eq3],
+          prompt: `Practice #${num}: Draw ${eq1}, ${eq2}, and ${eq3}. Shade the region satisfying ${a}x + ${b}y ≤ ${rhs1}, x + y ≥ ${c2}, and y ≤ x.`,
+          shadeConfig: {
+            enabled: true,
+            testFn: (x, y) => (a * x + b * y <= rhs1 + 0.1) && (x + y >= c2 - 0.1) && (y <= x + 0.1) && x >= 0 && y >= 0
+          }
+        };
+      }
+
+      if (pick === 'QUADRATIC') {
+        const r1 = [-3, -2, -1, 1, 2][Math.floor(Math.random() * 5)];
+        let r2 = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+        if (r1 === r2) r2 += 2;
+        const isUp = Math.random() > 0.35;
+        const a = isUp ? 1 : -1;
+        const b = -a * (r1 + r2);
+        const c = a * r1 * r2;
+        const bStr = b === 0 ? '' : b > 0 ? ` + ${b}x` : ` - ${Math.abs(b)}x`;
+        const cStr = c === 0 ? '' : c > 0 ? ` + ${c}` : ` - ${Math.abs(c)}`;
+        const eq = `y = ${a === -1 ? '-' : ''}x^2${bStr}${cStr}`;
+
+        return {
+          id,
+          source: 'GENERATED',
+          badge: `PRACTICE #${num}`,
+          topic: 'QUADRATIC',
+          topicName: 'Quadratic Functions (Form 4)',
+          equations: [eq],
+          prompt: `Practice #${num}: Find the x-intercepts, y-intercept, and ${isUp ? 'minimum' : 'maximum'} vertex of ${eq}.`,
+          shadeConfig: { enabled: false }
+        };
+      }
+
+      if (pick === 'SIMULTANEOUS') {
+        const px = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+        const py = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+        const c1 = py + px;
+        const c2 = py - 2 * px;
+        const c2Str = c2 >= 0 ? `+ ${c2}` : `- ${Math.abs(c2)}`;
+        const eq1 = `y = -x + ${c1}`;
+        const eq2 = `y = 2x ${c2Str}`;
+        return {
+          id,
+          source: 'GENERATED',
+          badge: `PRACTICE #${num} (2-EQ)`,
+          topic: 'SIMULTANEOUS',
+          topicName: 'Simultaneous Equations (Form 4)',
+          equations: [eq1, eq2],
+          prompt: `Practice #${num}: Solve the simultaneous linear equations ${eq1} and ${eq2} graphically.`,
+          shadeConfig: { enabled: false }
+        };
+      }
+
+      if (pick === 'CIRCLE') {
+        const r = [3, 4, 5, 6, 8][Math.floor(Math.random() * 5)];
+        const eq = `x^2 + y^2 = ${r * r}`;
+        return {
+          id,
+          source: 'GENERATED',
+          badge: `PRACTICE #${num}`,
+          topic: 'CIRCLE',
+          topicName: 'Circle Locus (Form 3)',
+          equations: [eq],
+          prompt: `Practice #${num}: Determine the center and radius of the circle locus ${eq}.`,
+          shadeConfig: { enabled: false }
+        };
+      }
+
+      const m = [-3, -2, 2, 3, 4][Math.floor(Math.random() * 5)];
+      const xInt = [-4, -2, 2, 3, 4][Math.floor(Math.random() * 5)];
+      const c = -m * xInt;
+      const cStr = c >= 0 ? `+ ${c}` : `- ${Math.abs(c)}`;
+      const eq = `y = ${m}x ${cStr}`;
+      return {
+        id,
+        source: 'GENERATED',
+        badge: `PRACTICE #${num}`,
+        topic: 'LINEAR',
+        topicName: 'Straight Lines (Form 3)',
+        equations: [eq],
+        prompt: `Practice #${num}: Find the gradient, y-intercept, and x-intercept of the straight line ${eq}.`,
+        shadeConfig: { enabled: false }
+      };
+    }
+
+    // =========================================================================
+    // 4. UNIVERSAL MULTI-EQUATION PARSER & SMART AUTO-SCALE ENGINE
+    // =========================================================================
+    function parseSingleEquation(rawEq, index) {
+      const clean = rawEq.trim();
+      if (!clean) return null;
+
+      const norm = clean
+        .replace(/\s+/g, '')
+        .replace(/²/g, '^2')
+        .replace(/³/g, '^3')
+        .replace(/≤/g, '=')
+        .replace(/≥/g, '=')
+        .toLowerCase();
+
+      const shiftedCircle = norm.match(/^\(x([+-]\d+\.?\d*)\)\^2\+\(y([+-]\d+\.?\d*)\)\^2=(\d+\.?\d*)$/);
+      if (shiftedCircle) {
+        const h = -parseFloat(shiftedCircle[1]);
+        const k = -parseFloat(shiftedCircle[2]);
+        const r = Math.sqrt(parseFloat(shiftedCircle[3]));
+        return {
+          raw: clean,
+          kind: 'circle',
+          index,
+          h, k, r,
+          keyPoints: [
+            { x: h, y: k, label: `C(${h},${k})` },
+            { x: h + r, y: k, label: `(${(h + r).toFixed(1)},${k})` }
+          ],
+          bounds: { xMin: h - r - 2, xMax: h + r + 2, yMin: k - r - 2, yMax: k + r + 2 },
+          summary: `Circle Center(${h},${k}), r=${r.toFixed(1)}`
+        };
+      }
+
+      const originCircle = norm.match(/^x\^2\+y\^2=(\d+\.?\d*)$/);
+      if (originCircle) {
+        const r = Math.sqrt(parseFloat(originCircle[1]));
+        return {
+          raw: clean,
+          kind: 'circle',
+          index,
+          h: 0, k: 0, r,
+          keyPoints: [
+            { x: 0, y: 0, label: 'O(0,0)' },
+            { x: r, y: 0, label: `(${r},0)` },
+            { x: 0, y: r, label: `(0,${r})` }
+          ],
+          bounds: { xMin: -r - 2, xMax: r + 2, yMin: -r - 2, yMax: r + 2 },
+          summary: `Circle O(0,0), r=${r}`
+        };
+      }
+
+      if (norm === 'x=y' || norm === 'y=x') {
+        return {
+          raw: clean,
+          kind: 'linear',
+          index,
+          m: 1, c: 0,
+          dashed: index === 2,
+          evalFn: (x) => x,
+          keyPoints: [{ x: 0, y: 0, label: '(0,0)' }],
+          bounds: { xMin: 0, xMax: 12, yMin: 0, yMax: 12 },
+          summary: `Line x = y (m = 1)`
+        };
+      }
+
+      const vertMatch = norm.match(/^x=([+-]?\d+\.?\d*)$/);
+      if (vertMatch) {
+        const k = parseFloat(vertMatch[1]);
+        return {
+          raw: clean,
+          kind: 'vertical',
+          index,
+          xVal: k,
+          dashed: true,
+          keyPoints: [{ x: k, y: 0, label: `(${k},0)` }],
+          bounds: { xMin: Math.min(0, k - 3), xMax: Math.max(5, k + 3), yMin: 0, yMax: 10 },
+          summary: `Vertical Line x = ${k}`
+        };
+      }
+
+      const genLinear = norm.match(/^([+-]?\d*\.?\d*)x([+-]\d*\.?\d*)y=([+-]?\d+\.?\d*)$/);
+      const genLinearYX = norm.match(/^([+-]?\d*\.?\d*)y([+-]\d*\.?\d*)x=([+-]?\d+\.?\d*)$/);
+      if (genLinear || genLinearYX) {
+        let a, b, d;
+        if (genLinear) {
+          a = genLinear[1] === '' || genLinear[1] === '+' ? 1 : genLinear[1] === '-' ? -1 : parseFloat(genLinear[1]);
+          b = genLinear[2] === '+' ? 1 : genLinear[2] === '-' ? -1 : parseFloat(genLinear[2]);
+          d = parseFloat(genLinear[3]);
+        } else {
+          b = genLinearYX[1] === '' || genLinearYX[1] === '+' ? 1 : genLinearYX[1] === '-' ? -1 : parseFloat(genLinearYX[1]);
+          a = genLinearYX[2] === '+' ? 1 : genLinearYX[2] === '-' ? -1 : parseFloat(genLinearYX[2]);
+          d = parseFloat(genLinearYX[3]);
+        }
+        if (b !== 0) {
+          const m = -a / b;
+          const c = d / b;
+          const xInt = a !== 0 ? d / a : 0;
+          const yInt = c;
+          const pts = [];
+          if (Number.isFinite(yInt)) pts.push({ x: 0, y: Number(yInt.toFixed(2)), label: `(0,${Number(yInt.toFixed(1))})` });
+          if (a !== 0 && Number.isFinite(xInt)) pts.push({ x: Number(xInt.toFixed(2)), y: 0, label: `(${Number(xInt.toFixed(1))},0)` });
+
+          return {
+            raw: clean,
+            kind: 'linear',
+            index,
+            m, c,
+            evalFn: (x) => m * x + c,
+            keyPoints: pts,
+            bounds: {
+              xMin: Math.min(-2, xInt - 3),
+              xMax: Math.max(6, xInt + 4),
+              yMin: Math.min(-2, yInt - 3),
+              yMax: Math.max(6, yInt + 4)
+            },
+            summary: `${clean} ⇒ m=${Number(m.toFixed(2))}, Y-int(0,${Number(yInt.toFixed(1))}), X-int(${Number(xInt.toFixed(1))},0)`
+          };
+        }
+      }
+
+      const trigMatch = norm.match(/^(?:y|f\(x\))=([+-]?\d*\.?\d*)?(sin|cos)\((\d*\.?\d*)?x\)([+-]\d+\.?\d*)?$/);
+      if (trigMatch) {
+        const a = !trigMatch[1] || trigMatch[1] === '+' ? 1 : trigMatch[1] === '-' ? -1 : parseFloat(trigMatch[1]);
+        const fn = trigMatch[2];
+        const b = trigMatch[3] ? parseFloat(trigMatch[3]) : 1;
+        const c = trigMatch[4] ? parseFloat(trigMatch[4]) : 0;
+        const amp = Math.abs(a);
+        const yMax = c + amp;
+        const yMin = c - amp;
+        return {
+          raw: clean,
+          kind: 'trig',
+          index,
+          fn, a, b, c,
+          evalFn: (deg) => {
+            const rad = (deg * Math.PI) / 180;
+            return (fn === 'sin' ? a * Math.sin(b * rad) : a * Math.cos(b * rad)) + c;
+          },
+          keyPoints: [
+            { x: fn === 'sin' ? 90 / b : 0, y: yMax, label: `Max(${fn === 'sin' ? Math.round(90 / b) : 0},${yMax})` },
+            { x: fn === 'sin' ? 270 / b : 180 / b, y: yMin, label: `Min(${fn === 'sin' ? Math.round(270 / b) : Math.round(180 / b)},${yMin})` }
+          ],
+          bounds: { xMin: 0, xMax: 360, yMin: yMin - 1, yMax: yMax + 1 },
+          summary: `${clean} ⇒ Amp=${amp}, Period=${Math.round(360 / b)}°, Range=[${yMin},${yMax}]`
+        };
+      }
+
+      let rhs = norm.replace(/^(?:y|f\(x\))=/, '');
+      let jsExpr = rhs
+        .replace(/(\d)(x)/g, '$1*$2')
+        .replace(/(\))(\()/g, '$1*$2')
+        .replace(/\^/g, '**');
+
+      try {
+        const evalFn = new Function('x', `return ${jsExpr};`);
+        const y0 = evalFn(0);
+        const y1 = evalFn(1);
+        const yNeg1 = evalFn(-1);
+        if (typeof y0 !== 'number' || Number.isNaN(y0)) return null;
+
+        const isCubic = rhs.includes('x^3');
+        const isQuad = !isCubic && rhs.includes('x^2');
+
+        if (isQuad) {
+          const c = y0;
+          const a = (y1 + yNeg1 - 2 * c) / 2;
+          const b = (y1 - yNeg1) / 2;
+          const vx = a !== 0 ? -b / (2 * a) : 0;
+          const vy = evalFn(vx);
+          const disc = b * b - 4 * a * c;
+          const roots = [];
+          if (disc >= 0 && a !== 0) {
+            const r1 = (-b - Math.sqrt(disc)) / (2 * a);
+            const r2 = (-b + Math.sqrt(disc)) / (2 * a);
+            roots.push(Number(r1.toFixed(2)));
+            if (Math.abs(r1 - r2) > 1e-4) roots.push(Number(r2.toFixed(2)));
+          }
+
+          const keyPoints = [
+            { x: Number(vx.toFixed(2)), y: Number(vy.toFixed(2)), label: `${a > 0 ? 'Min' : 'Max'}(${vx.toFixed(1)},${vy.toFixed(1)})` },
+            { x: 0, y: Number(c.toFixed(2)), label: `(0,${Number(c.toFixed(1))})` }
+          ];
+          roots.forEach(rt => keyPoints.push({ x: rt, y: 0, label: `(${rt},0)` }));
+
+          const xLo = Math.min(vx - 3, ...(roots.length ? roots : [0]), -1) - 1;
+          const xHi = Math.max(vx + 3, ...(roots.length ? roots : [0]), 1) + 1;
+          const yLo = Math.min(vy, c, 0) - 2;
+          const yHi = Math.max(vy, c, 0) + 3;
+
+          return {
+            raw: clean,
+            kind: 'quadratic',
+            index,
+            a, b, c,
+            evalFn,
+            keyPoints,
+            bounds: { xMin: xLo, xMax: xHi, yMin: yLo, yMax: yHi },
+            summary: `${clean} ⇒ ${a > 0 ? 'Min' : 'Max'}(${vx.toFixed(1)},${vy.toFixed(1)}), Y-int(0,${c})`
+          };
+        }
+
+        if (!isCubic) {
+          const c = y0;
+          const m = y1 - y0;
+          const xInt = m !== 0 ? -c / m : 0;
+          const pts = [{ x: 0, y: Number(c.toFixed(2)), label: `(0,${Number(c.toFixed(1))})` }];
+          if (m !== 0) pts.push({ x: Number(xInt.toFixed(2)), y: 0, label: `(${Number(xInt.toFixed(1))},0)` });
+
+          return {
+            raw: clean,
+            kind: 'linear',
+            index,
+            m, c,
+            evalFn,
+            keyPoints: pts,
+            bounds: {
+              xMin: Math.min(-3, xInt - 2),
+              xMax: Math.max(5, xInt + 3),
+              yMin: Math.min(-3, c - 2),
+              yMax: Math.max(5, c + 3)
+            },
+            summary: `${clean} ⇒ m=${Number(m.toFixed(2))}, Y-int(0,${Number(c.toFixed(1))})`
+          };
+        }
+
+        return {
+          raw: clean,
+          kind: 'cubic',
+          index,
+          evalFn,
+          keyPoints: [{ x: 0, y: Number(y0.toFixed(2)), label: `(0,${y0.toFixed(1)})` }],
+          bounds: { xMin: -3.5, xMax: 3.5, yMin: -8, yMax: 8 },
+          summary: `${clean} ⇒ Cubic Curve, Y-int(0,${y0.toFixed(1)})`
+        };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function computeNiceStep(range, targetTicks = 8) {
+      if (range <= 0) return 1;
+      const rough = range / targetTicks;
+      const pow10 = Math.pow(10, Math.floor(Math.log10(rough)));
+      const norm = rough / pow10;
+      let niceNorm = 1;
+      if (norm <= 1.2) niceNorm = 1;
+      else if (norm <= 2.5) niceNorm = 2;
+      else if (norm <= 5.5) niceNorm = 5;
+      else niceNorm = 10;
+      return niceNorm * pow10;
+    }
+
+    function solveMultiEquationSystem(eqStrings, promptText, shadeConfig) {
+      const parsedList = eqStrings
+        .map((str, idx) => parseSingleEquation(str, idx))
+        .filter(Boolean);
+
+      if (parsedList.length === 0) {
+        parsedList.push(parseSingleEquation('y = 2x + 3', 0));
+      }
+
+      const intersections = [];
+      for (let i = 0; i < parsedList.length; i++) {
+        for (let j = i + 1; j < parsedList.length; j++) {
+          const e1 = parsedList[i];
+          const e2 = parsedList[j];
+
+          if (e1.kind === 'linear' && e2.kind === 'linear') {
+            if (Math.abs(e1.m - e2.m) > 1e-6) {
+              const ix = (e2.c - e1.c) / (e1.m - e2.m);
+              const iy = e1.m * ix + e1.c;
+              intersections.push({
+                x: Number(ix.toFixed(2)),
+                y: Number(iy.toFixed(2)),
+                label: `(${Number(ix.toFixed(1))},${Number(iy.toFixed(1))})`
+              });
+            }
+          } else if (e1.kind === 'vertical' && e2.evalFn) {
+            const iy = e2.evalFn(e1.xVal);
+            if (Number.isFinite(iy)) {
+              intersections.push({
+                x: Number(e1.xVal.toFixed(2)),
+                y: Number(iy.toFixed(2)),
+                label: `(${Number(e1.xVal.toFixed(1))},${Number(iy.toFixed(1))})`
+              });
+            }
+          } else if (e2.kind === 'vertical' && e1.evalFn) {
+            const iy = e1.evalFn(e2.xVal);
+            if (Number.isFinite(iy)) {
+              intersections.push({
+                x: Number(e2.xVal.toFixed(2)),
+                y: Number(iy.toFixed(2)),
+                label: `(${Number(e2.xVal.toFixed(1))},${Number(iy.toFixed(1))})`
+              });
+            }
+          }
+        }
+      }
+
+      const isTrig = parsedList.some(e => e.kind === 'trig');
+      let xMin, xMax, yMin, yMax, xStep, yStep;
+
+      if (isTrig) {
+        xMin = 0;
+        xMax = 360;
+        xStep = 90;
+        let loY = -2, hiY = 2;
+        parsedList.forEach(e => {
+          loY = Math.min(loY, e.bounds.yMin);
+          hiY = Math.max(hiY, e.bounds.yMax);
+        });
+        yStep = computeNiceStep(hiY - loY, 6);
+        yMin = Math.floor(loY / yStep) * yStep;
+        yMax = Math.ceil(hiY / yStep) * yStep;
+      } else {
+        let rawXMin = Infinity, rawXMax = -Infinity;
+        let rawYMin = Infinity, rawYMax = -Infinity;
+
+        parsedList.forEach(e => {
+          rawXMin = Math.min(rawXMin, e.bounds.xMin);
+          rawXMax = Math.max(rawXMax, e.bounds.xMax);
+          rawYMin = Math.min(rawYMin, e.bounds.yMin);
+          rawYMax = Math.max(rawYMax, e.bounds.yMax);
+        });
+
+        intersections.forEach(pt => {
+          rawXMin = Math.min(rawXMin, pt.x - 3);
+          rawXMax = Math.max(rawXMax, pt.x + 4);
+          rawYMin = Math.min(rawYMin, pt.y - 3);
+          rawYMax = Math.max(rawYMax, pt.y + 4);
+        });
+
+        if (shadeConfig && shadeConfig.enabled) {
+          rawXMin = 0;
+          rawYMin = 0;
+          rawXMax = Math.max(rawXMax, 35);
+          rawYMax = Math.max(rawYMax, 45);
+        }
+
+        xStep = computeNiceStep(rawXMax - rawXMin, 8);
+        yStep = computeNiceStep(rawYMax - rawYMin, 8);
+
+        xMin = rawXMin === 0 ? 0 : Math.floor(rawXMin / xStep) * xStep;
+        xMax = Math.ceil(rawXMax / xStep) * xStep;
+        yMin = rawYMin === 0 ? 0 : Math.floor(rawYMin / yStep) * yStep;
+        yMax = Math.ceil(rawYMax / yStep) * yStep;
+
+        if (parsedList.length === 1 && parsedList[0].kind === 'circle') {
+          const maxBound = Math.max(Math.abs(xMin), Math.abs(xMax), Math.abs(yMin), Math.abs(yMax));
+          xStep = computeNiceStep(maxBound * 2, 8);
+          yStep = xStep;
+          const snapped = Math.ceil(maxBound / xStep) * xStep;
+          xMin = -snapped;
+          xMax = snapped;
+          yMin = -snapped;
+          yMax = snapped;
+        }
+      }
+
+      const formulas = parsedList.map((e, i) => `Eq ${i + 1}: ${e.summary}`);
+      if (intersections.length > 0) {
+        formulas.push(`Intersections: ${intersections.map(p => p.label).join(', ')}`);
+      }
+
+      const steps = parsedList.map((e, i) => {
+        return `Step ${i + 1} (K1): Plot (${i + 1}) ${e.raw} using intercepts/key points ${e.keyPoints.map(k => k.label).join(', ')}`;
+      });
+      if (intersections.length > 0) {
+        steps.push(`Step ${parsedList.length + 1} (N1): Lines intersect at ${intersections.map(p => p.label).join(' & ')}`);
+      }
+      if (shadeConfig && shadeConfig.enabled) {
+        steps.push(`Step ${steps.length + 1} (N1): Shade the feasible region satisfying all inequality constraints.`);
+      }
+
+      const finalAns = intersections.length > 0
+        ? `Intersections: ${intersections.map(p => p.label).join(', ')} | Scale X:[${xMin},${xMax}], Y:[${yMin},${yMax}]`
+        : `${parsedList[0].summary} | Scale X:[${xMin},${xMax}], Y:[${yMin},${yMax}]`;
+
+      const shortEqHeader = parsedList.map(e => e.raw).join(' | ').slice(0, 38);
+      const shortAnsHeader = intersections.length > 0
+        ? `ANS: Int ${intersections.map(p => p.label).join(', ')}`
+        : `ANS: ${parsedList[0].keyPoints.map(k => k.label).join(' ')}`.slice(0, 38);
+
+      return {
+        equations: parsedList,
+        intersections,
+        prompt: promptText,
+        shadeConfig: shadeConfig || { enabled: false },
+        xDomain: [xMin, xMax],
+        yDomain: [yMin, yMax],
+        xStep,
+        yStep,
+        formulas,
+        steps,
+        finalAnswer: finalAns,
+        shortEqHeader: `EQ: ${shortEqHeader}`,
+        shortAnsHeader
+      };
+    }
+
+    // =========================================================================
+    // 5. VECTOR STROKE FONT (5x7 GRID) FOR COMPACT PLOTTER HEADER
+    // =========================================================================
+    const VECTOR_FONT = {
+      'A': [[0,7],[2.5,0],[5,7],null,[1,4.5],[4,4.5]],
+      'B': [[0,0],[0,7],[3.5,7],[4.5,6],[4.5,4.2],[3.5,3.5],[0,3.5],null,[3.5,3.5],[4.8,2.8],[4.8,1],[3.5,0],[0,0]],
+      'C': [[4.8,1.2],[3.5,0],[1.5,0],[0,1.5],[0,5.5],[1.5,7],[3.5,7],[4.8,5.8]],
+      'D': [[0,0],[0,7],[3,7],[4.8,5.2],[4.8,1.8],[3,0],[0,0]],
+      'E': [[4.5,0],[0,0],[0,7],[4.5,7],null,[0,3.5],[3.5,3.5]],
+      'F': [[0,7],[0,0],[4.5,0],null,[0,3.5],[3.5,3.5]],
+      'G': [[4.8,1.5],[3.5,0],[1.5,0],[0,1.5],[0,5.5],[1.5,7],[4.8,7],[4.8,4],[2.8,4]],
+      'H': [[0,0],[0,7],null,[5,0],[5,7],null,[0,3.5],[5,3.5]],
+      'I': [[1,0],[4,0],null,[2.5,0],[2.5,7],null,[1,7],[4,7]],
+      'J': [[4,0],[4,5.5],[2.8,7],[1.2,7],[0,5.5]],
+      'K': [[0,0],[0,7],null,[4.8,0],[0,3.8],null,[1.5,2.6],[4.8,7]],
+      'L': [[0,0],[0,7],[4.5,7]],
+      'M': [[0,7],[0,0],[2.5,4],[5,0],[5,7]],
+      'N': [[0,7],[0,0],[5,7],[5,0]],
+      'O': [[1.5,0],[3.5,0],[5,1.5],[5,5.5],[3.5,7],[1.5,7],[0,5.5],[0,1.5],[1.5,0]],
+      'P': [[0,7],[0,0],[3.5,0],[4.8,1],[4.8,2.8],[3.5,3.8],[0,3.8]],
+      'Q': [[1.5,0],[3.5,0],[5,1.5],[5,5.5],[3.5,7],[1.5,7],[0,5.5],[0,1.5],[1.5,0],null,[3,4.8],[5.2,7.2]],
+      'R': [[0,7],[0,0],[3.5,0],[4.8,1],[4.8,2.6],[3.5,3.6],[0,3.6],null,[2.5,3.6],[4.8,7]],
+      'S': [[4.6,1.2],[3.4,0],[1.4,0],[0.2,1.2],[0.2,2.6],[4.6,4.4],[4.6,5.8],[3.4,7],[1.4,7],[0.2,5.8]],
+      'T': [[0,0],[5,0],null,[2.5,0],[2.5,7]],
+      'U': [[0,0],[0,5.5],[1.5,7],[3.5,7],[5,5.5],[5,0]],
+      'V': [[0,0],[2.5,7],[5,0]],
+      'W': [[0,0],[1.2,7],[2.5,3],[3.8,7],[5,0]],
+      'X': [[0,0],[5,7],null,[5,0],[0,7]],
+      'Y': [[0,0],[2.5,3.5],[5,0],null,[2.5,3.5],[2.5,7]],
+      'Z': [[0,0],[5,0],[0,7],[5,7]],
+      'a': [[1,2.5],[3.8,2.5],[4.5,3.3],[4.5,7],null,[4.5,4.5],[1.5,4.5],[0.5,5.5],[1.5,7],[4.5,7]],
+      'c': [[4.5,3.2],[3.5,2.5],[1.5,2.5],[0.3,3.7],[0.3,5.8],[1.5,7],[3.5,7],[4.5,6.2]],
+      'd': [[4.5,0],[4.5,7],[1.5,7],[0.3,5.8],[0.3,3.7],[1.5,2.5],[4.5,2.5]],
+      'e': [[0.3,4.8],[4.5,4.8],[4.5,3.5],[3.3,2.5],[1.5,2.5],[0.3,3.7],[0.3,5.8],[1.5,7],[3.8,7]],
+      'g': [[4.5,2.5],[1.5,2.5],[0.3,3.7],[0.3,5.5],[1.5,6.5],[4.5,6.5],null,[4.5,2.5],[4.5,8],[3.2,9],[1,9]],
+      'i': [[2.5,0.8],[2.5,1.2],null,[2.5,2.6],[2.5,7]],
+      'l': [[2,0],[2,7],[3.2,7]],
+      'm': [[0,7],[0,2.5],[1.5,2.5],[2.5,3.5],[2.5,7],null,[2.5,3.5],[3.5,2.5],[4.8,2.5],[5,3.5],[5,7]],
+      'n': [[0,7],[0,2.5],[3.5,2.5],[4.5,3.5],[4.5,7]],
+      'o': [[1.5,2.5],[3.5,2.5],[4.6,3.7],[4.6,5.8],[3.5,7],[1.5,7],[0.4,5.8],[0.4,3.7],[1.5,2.5]],
+      'p': [[0,9],[0,2.5],[3.5,2.5],[4.5,3.5],[4.5,5.5],[3.5,6.5],[0,6.5]],
+      'r': [[0.5,7],[0.5,2.5],null,[0.5,3.8],[2,2.5],[4,2.5]],
+      's': [[4.2,3.2],[3.2,2.5],[1.4,2.5],[0.5,3.3],[4.2,5.6],[3.2,7],[1.2,7],[0.4,6.2]],
+      't': [[2,0.5],[2,6],[3,7],[4.2,7],null,[0.6,2.6],[3.6,2.6]],
+      'x': [[0.4,2.5],[4.6,7],null,[4.6,2.5],[0.4,7]],
+      'y': [[0.4,2.5],[2.5,6.8],null,[4.6,2.5],[1.5,9],[0.4,9]],
+      '0': [[1.5,0],[3.5,0],[4.8,1.5],[4.8,5.5],[3.5,7],[1.5,7],[0.2,5.5],[0.2,1.5],[1.5,0]],
+      '1': [[1.2,1.5],[2.6,0],[2.6,7],null,[1,7],[4.2,7]],
+      '2': [[0.4,1.6],[1.6,0],[3.6,0],[4.6,1.4],[4.6,2.8],[0.3,7],[4.8,7]],
+      '3': [[0.5,1.2],[1.6,0],[3.6,0],[4.6,1.2],[4.6,2.6],[3.2,3.4],[2,3.4],null,[3.2,3.4],[4.7,4.4],[4.7,5.8],[3.5,7],[1.4,7],[0.4,5.8]],
+      '4': [[3.8,7],[3.8,0],[0.3,4.8],[5,4.8]],
+      '5': [[4.5,0],[0.6,0],[0.6,3.2],[3.5,3.2],[4.7,4.3],[4.7,5.8],[3.5,7],[1.2,7],[0.4,6]],
+      '6': [[4.2,1],[3,0],[1.4,0],[0.3,1.5],[0.3,5.5],[1.5,7],[3.6,7],[4.7,5.8],[4.7,4.3],[3.5,3.4],[0.3,3.4]],
+      '7': [[0.3,0],[4.8,0],[1.8,7]],
+      '8': [[1.5,3.4],[0.5,2.5],[0.5,1.1],[1.6,0],[3.4,0],[4.5,1.1],[4.5,2.5],[3.5,3.4],[1.5,3.4],[0.3,4.4],[0.3,5.8],[1.5,7],[3.5,7],[4.7,5.8],[4.7,4.4],[3.5,3.4]],
+      '9': [[4.6,3.5],[1.5,3.5],[0.4,2.5],[0.4,1.1],[1.5,0],[3.5,0],[4.6,1.2],[4.6,5.6],[3.4,7],[1.2,7]],
+      '=': [[0.5,2.6],[4.5,2.6],null,[0.5,4.6],[4.5,4.6]],
+      '+': [[2.5,1.4],[2.5,5.8],null,[0.4,3.6],[4.6,3.6]],
+      '-': [[0.6,3.6],[4.4,3.6]],
+      '^': [[1.2,2.2],[2.5,0.4],[3.8,2.2]],
+      '(': [[3.5,0],[2,1.6],[2,5.4],[3.5,7]],
+      ')': [[1.5,0],[3,1.6],[3,5.4],[1.5,7]],
+      ':': [[2.5,2.2],[2.5,2.6],null,[2.5,5.2],[2.5,5.6]],
+      ',': [[2.5,6.2],[2,7.8]],
+      '.': [[2.5,6.4],[2.5,6.8]],
+      '/': [[4.2,0.5],[0.8,6.8]],
+      '|': [[2.5,0],[2.5,7]],
+      ' ': []
+    };
+
+    // =========================================================================
+    // 6. PLOTTER ENGINE & VECTOR STROKE GENERATOR (STREAMING TO ESP32)
+    // =========================================================================
+    let currentSolvedSystem = null;
+
+    const plotter = {
+      penX: 18,
+      penY: 18,
+      targetX: 18,
+      targetY: 18,
+      penDown: false,
+      isRunning: false,
+      isPaused: false,
+      speedMultiplier: 2.5,
+      encoderSteps: 360,
+      phaseLabel: 'READY',
+      plannedStrokes: [],
+      completedStrokes: [],
+      currentStrokeIdx: 0,
+      currentPointIdx: 0,
+      lastFrameTime: 0
+    };
+
+    const canvas = document.getElementById('plotter-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function getThemeVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function buildVectorTextStrokes(text, startX, startY, charHeight, color, phase = 'TEXT') {
+      const strokes = [];
+      const scaleY = charHeight / 7;
+      const scaleX = scaleY * 0.85;
+      const advance = 6.0 * scaleX;
+      let cursorX = startX;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const glyph = VECTOR_FONT[ch] || VECTOR_FONT[ch.toUpperCase()];
+        if (glyph && glyph.length > 0) {
+          let currentPoly = [];
+          for (const pt of glyph) {
+            if (pt === null) {
+              if (currentPoly.length > 1) {
+                strokes.push({ points: currentPoly, color, width: 1.35, phase });
+              }
+              currentPoly = [];
+            } else {
+              currentPoly.push({
+                x: cursorX + pt[0] * scaleX,
+                y: startY + pt[1] * scaleY
+              });
+            }
+          }
+          if (currentPoly.length > 1) {
+            strokes.push({ points: currentPoly, color, width: 1.35, phase });
+          }
+        }
+        cursorX += advance;
+        if (cursorX > 286) break;
+      }
+      return strokes;
+    }
+
+    function generatePlotterStrokes(system, mode = 'ALL') {
+      const strokes = [];
+      const axisInk = getThemeVar('--ink-axis') || '#233326';
+      const tickInk = getThemeVar('--ink-tick') || '#4F7754';
+      const curveColors = [
+        getThemeVar('--ink-curve1') || '#D96B78',
+        getThemeVar('--ink-curve2') || '#3B7A57',
+        getThemeVar('--ink-curve3') || '#2563EB',
+        getThemeVar('--ink-curve4') || '#D97706'
+      ];
+
+      if (mode === 'ALL' || mode === 'TEXT') {
+        strokes.push(...buildVectorTextStrokes(system.shortEqHeader, 14, 12, 4.8, axisInk, 'TEXT'));
+        strokes.push(...buildVectorTextStrokes(system.shortAnsHeader, 14, 21.5, 4.5, curveColors[0], 'TEXT'));
+        strokes.push({
+          points: [{ x: 12, y: 31 }, { x: 288, y: 31 }],
+          color: tickInk,
+          width: 0.9,
+          phase: 'TEXT'
+        });
+      }
+
+      if (mode === 'ALL' || mode === 'GRAPH') {
+        const gLeft = 26;
+        const gRight = 284;
+        const gTop = 38;
+        const gBottom = 284;
+        const gWidth = gRight - gLeft;
+        const gHeight = gBottom - gTop;
+
+        const [xMin, xMax] = system.xDomain;
+        const [yMin, yMax] = system.yDomain;
+
+        const mapX = (x) => gLeft + ((x - xMin) / (xMax - xMin)) * gWidth;
+        const mapY = (y) => gBottom - ((y - yMin) / (yMax - yMin)) * gHeight;
+
+        const axisY = Math.min(Math.max(mapY(0), gTop + 6), gBottom - 6);
+        const axisX = Math.min(Math.max(mapX(0), gLeft + 6), gRight - 6);
+
+        strokes.push({ points: [{ x: gLeft, y: axisY }, { x: gRight, y: axisY }], color: axisInk, width: 1.6, phase: 'AXES' });
+        strokes.push({
+          points: [{ x: gRight - 4, y: axisY - 2.5 }, { x: gRight, y: axisY }, { x: gRight - 4, y: axisY + 2.5 }],
+          color: axisInk, width: 1.6, phase: 'AXES'
+        });
+        strokes.push({ points: [{ x: axisX, y: gBottom }, { x: axisX, y: gTop }], color: axisInk, width: 1.6, phase: 'AXES' });
+        strokes.push({
+          points: [{ x: axisX - 2.5, y: gTop + 4 }, { x: axisX, y: gTop }, { x: axisX + 2.5, y: gTop + 4 }],
+          color: axisInk, width: 1.6, phase: 'AXES'
+        });
+
+        strokes.push(...buildVectorTextStrokes('x', gRight - 3.5, axisY + 3.5, 4.2, axisInk, 'AXES'));
+        strokes.push(...buildVectorTextStrokes('y', axisX + 3.5, gTop + 1, 4.2, axisInk, 'AXES'));
+
+        const xStep = system.xStep || 1;
+        for (let xv = Math.ceil(xMin / xStep) * xStep; xv <= xMax + 1e-6; xv += xStep) {
+          const cleanX = Math.round(xv * 100) / 100;
+          if (Math.abs(cleanX) < 1e-6) continue;
+          const px = mapX(cleanX);
+          if (px >= gLeft + 3 && px <= gRight - 6) {
+            strokes.push({ points: [{ x: px, y: axisY - 2 }, { x: px, y: axisY + 2 }], color: tickInk, width: 1.2, phase: 'AXES' });
+            strokes.push(...buildVectorTextStrokes(String(cleanX), px - 3, axisY + 3.5, 3.1, tickInk, 'AXES'));
+          }
+        }
+
+        const yStep = system.yStep || 1;
+        for (let yv = Math.ceil(yMin / yStep) * yStep; yv <= yMax + 1e-6; yv += yStep) {
+          const cleanY = Math.round(yv * 100) / 100;
+          if (Math.abs(cleanY) < 1e-6) continue;
+          const py = mapY(cleanY);
+          if (py >= gTop + 6 && py <= gBottom - 3) {
+            strokes.push({ points: [{ x: axisX - 2, y: py }, { x: axisX + 2, y: py }], color: tickInk, width: 1.2, phase: 'AXES' });
+            strokes.push(...buildVectorTextStrokes(String(cleanY), axisX - 10, py - 1.6, 3.1, tickInk, 'AXES'));
+          }
+        }
+
+        system.equations.forEach((eqObj, idx) => {
+          const color = curveColors[idx % curveColors.length];
+
+          if (eqObj.kind === 'vertical') {
+            if (eqObj.xVal >= xMin && eqObj.xVal <= xMax) {
+              const px = mapX(eqObj.xVal);
+              strokes.push({
+                points: [{ x: px, y: gBottom }, { x: px, y: gTop }],
+                color, width: 2.1, dashed: true, phase: 'GRAPH'
+              });
+            }
+          } else if (eqObj.kind === 'circle') {
+            const scale = Math.min(gWidth / (xMax - xMin), gHeight / (yMax - yMin));
+            const cx = mapX(eqObj.h);
+            const cy = mapY(eqObj.k);
+            const rMm = eqObj.r * scale;
+            const pts = [];
+            for (let s = 0; s <= 96; s++) {
+              const th = (s / 96) * Math.PI * 2;
+              pts.push({ x: cx + rMm * Math.cos(th), y: cy - rMm * Math.sin(th) });
+            }
+            strokes.push({ points: pts, color, width: 2.3, phase: 'GRAPH' });
+          } else if (eqObj.evalFn) {
+            let seg = [];
+            let labelPlaced = false;
+            const samples = 150;
+            for (let s = 0; s <= samples; s++) {
+              const x = xMin + (s / samples) * (xMax - xMin);
+              const y = eqObj.evalFn(x);
+              if (Number.isFinite(y) && y >= yMin && y <= yMax) {
+                const px = mapX(x);
+                const py = mapY(y);
+                seg.push({ x: px, y: py });
+                if (!labelPlaced && s > 25 && s < 115 && px > gLeft + 15 && px < gRight - 45 && py > gTop + 12 && py < gBottom - 12) {
+                  strokes.push(...buildVectorTextStrokes(eqObj.raw, px + 2, py - 5, 3.2, color, 'LABELS'));
+                  labelPlaced = true;
+                }
+              } else if (seg.length > 1) {
+                strokes.push({ points: seg, color, width: 2.2, dashed: !!eqObj.dashed, phase: 'GRAPH' });
+                seg = [];
+              } else {
+                seg = [];
+              }
+            }
+            if (seg.length > 1) {
+              strokes.push({ points: seg, color, width: 2.2, dashed: !!eqObj.dashed, phase: 'GRAPH' });
+            }
+          }
+        });
+
+        const allMarkers = [
+          ...system.equations.flatMap((e, i) => e.keyPoints.map(k => ({ ...k, color: curveColors[i % curveColors.length] }))),
+          ...system.intersections.map(p => ({ ...p, color: axisInk, isIntersection: true }))
+        ];
+
+        allMarkers.forEach(mk => {
+          const px = mapX(mk.x);
+          const py = mapY(mk.y);
+          if (px >= gLeft && px <= gRight && py >= gTop && py <= gBottom) {
+            const dotPts = [];
+            for (let a = 0; a <= 14; a++) {
+              const ang = (a / 14) * Math.PI * 2;
+              dotPts.push({ x: px + 1.8 * Math.cos(ang), y: py + 1.8 * Math.sin(ang) });
+            }
+            strokes.push({ points: dotPts, color: mk.color, width: 1.8, phase: 'MARKERS' });
+            if (mk.isIntersection) {
+              const lx = Math.min(px + 3, gRight - 30);
+              const ly = Math.max(py - 5.5, gTop + 4);
+              strokes.push(...buildVectorTextStrokes(mk.label, lx, ly, 3.4, mk.color, 'MARKERS'));
+            }
+          }
+        });
+      }
+
+      return strokes;
+    }
+
+    // =========================================================================
+    // 7. CANVAS RENDERER (WITH INEQUALITY FEASIBLE REGION SHADING)
+    // =========================================================================
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      if (!rect.width) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderPlotterCanvas();
+    }
+
+    function renderPlotterCanvas() {
+      const size = canvas.parentElement.getBoundingClientRect().width;
+      if (!size) return;
+      const mmToPx = size / 300;
+
+      ctx.fillStyle = getThemeVar('--paper-bg') || '#FFFCF9';
+      ctx.fillRect(0, 0, size, size);
+
+      const majorCol = getThemeVar('--paper-grid-major');
+      const minorCol = getThemeVar('--paper-grid-minor');
+      for (let mm = 0; mm <= 300; mm += 2) {
+        const pos = mm * mmToPx;
+        const isMajor = mm % 10 === 0;
+        ctx.strokeStyle = isMajor ? majorCol : minorCol;
+        ctx.lineWidth = isMajor ? 0.85 : 0.4;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, size);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(size, pos);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = getThemeVar('--paper-zone-top');
+      ctx.fillRect(10 * mmToPx, 7 * mmToPx, 280 * mmToPx, 24 * mmToPx);
+
+      ctx.fillStyle = getThemeVar('--paper-zone-graph');
+      ctx.fillRect(10 * mmToPx, 35 * mmToPx, 280 * mmToPx, 254 * mmToPx);
+
+      const shadeEnabled = document.getElementById('toggle-shade-region').checked;
+      if (shadeEnabled && currentSolvedSystem && currentSolvedSystem.shadeConfig && currentSolvedSystem.shadeConfig.enabled && currentSolvedSystem.shadeConfig.testFn) {
+        const gLeft = 26, gRight = 284, gTop = 38, gBottom = 284;
+        const [xMin, xMax] = currentSolvedSystem.xDomain;
+        const [yMin, yMax] = currentSolvedSystem.yDomain;
+        const cellMm = 2.5;
+        ctx.fillStyle = getThemeVar('--ink-shade') || 'rgba(79, 119, 84, 0.22)';
+        for (let px = gLeft; px < gRight; px += cellMm) {
+          const mathX = xMin + ((px + cellMm / 2 - gLeft) / (gRight - gLeft)) * (xMax - xMin);
+          for (let py = gTop; py < gBottom; py += cellMm) {
+            const mathY = yMin + ((gBottom - (py + cellMm / 2)) / (gBottom - gTop)) * (yMax - yMin);
+            if (currentSolvedSystem.shadeConfig.testFn(mathX, mathY)) {
+              ctx.fillRect(px * mmToPx, py * mmToPx, cellMm * mmToPx, cellMm * mmToPx);
+            }
+          }
+        }
+      }
+
+      ctx.fillStyle = getThemeVar('--ink-tick') || '#5B6E5E';
+      ctx.font = '600 10px "JetBrains Mono", monospace';
+      ctx.fillText(`300 × 300 mm PLOTTER • A4988 CNC SHIELD • ${APP_THEMES[activeThemeKey].name}`, 12 * mmToPx, 296 * mmToPx);
+
+      if (document.getElementById('toggle-travel-lines').checked && plotter.plannedStrokes.length > 0) {
+        ctx.save();
+        ctx.setLineDash([3, 4]);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.42)';
+        ctx.lineWidth = 0.8;
+        let lastPt = { x: 18, y: 18 };
+        for (const st of plotter.plannedStrokes) {
+          if (st.points.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(lastPt.x * mmToPx, lastPt.y * mmToPx);
+            ctx.lineTo(st.points[0].x * mmToPx, st.points[0].y * mmToPx);
+            ctx.stroke();
+            lastPt = st.points[st.points.length - 1];
+          }
+        }
+        ctx.restore();
+      }
+
+      for (const st of plotter.completedStrokes) {
+        if (st.points.length < 2) continue;
+        ctx.save();
+        if (st.dashed) ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = st.color;
+        ctx.lineWidth = st.width * (mmToPx / 2);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(st.points[0].x * mmToPx, st.points[0].y * mmToPx);
+        for (let i = 1; i < st.points.length; i++) {
+          ctx.lineTo(st.points[i].x * mmToPx, st.points[i].y * mmToPx);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (plotter.isRunning && plotter.currentStrokeIdx < plotter.plannedStrokes.length) {
+        const activeSt = plotter.plannedStrokes[plotter.currentStrokeIdx];
+        if (activeSt && activeSt.points.length >= 2) {
+          ctx.save();
+          if (activeSt.dashed) ctx.setLineDash([5, 4]);
+          ctx.strokeStyle = activeSt.color;
+          ctx.lineWidth = activeSt.width * (mmToPx / 2);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(activeSt.points[0].x * mmToPx, activeSt.points[0].y * mmToPx);
+          for (let i = 1; i <= plotter.currentPointIdx && i < activeSt.points.length; i++) {
+            ctx.lineTo(activeSt.points[i].x * mmToPx, activeSt.points[i].y * mmToPx);
+          }
+          ctx.lineTo(plotter.penX * mmToPx, plotter.penY * mmToPx);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      const cx = plotter.penX * mmToPx;
+      const cy = plotter.penY * mmToPx;
+      const penCol = plotter.penDown ? getThemeVar('--secondary') : getThemeVar('--primary');
+
+      ctx.strokeStyle = 'rgba(128, 128, 128, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx, size);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = penCol;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2.3, 0, Math.PI * 2);
+      ctx.fillStyle = penCol;
+      ctx.fill();
+    }
+
+    // =========================================================================
+    // 8. SMOOTH REQUESTANIMATIONFRAME LOOP + LIVE ESP32 G-CODE STREAMING
+    // =========================================================================
+    function animationLoop(timestamp) {
+      if (!plotter.lastFrameTime) plotter.lastFrameTime = timestamp;
+      const dt = Math.min((timestamp - plotter.lastFrameTime) / 1000, 0.05);
+      plotter.lastFrameTime = timestamp;
+
+      if (plotter.isRunning && !plotter.isPaused) {
+        if (plotter.speedMultiplier >= 500) {
+          while (plotter.currentStrokeIdx < plotter.plannedStrokes.length) {
+            const st = plotter.plannedStrokes[plotter.currentStrokeIdx];
+            // Stream stroke G-code to ESP32 if connected
+            if (serialState.connected && st.points.length >= 2) {
+              sendSerialGcode('M5', true);
+              sendSerialGcode(`G0 X${st.points[0].x.toFixed(1)} Y${st.points[0].y.toFixed(1)}`, true);
+              sendSerialGcode('M3', true);
+              for (let p = 1; p < st.points.length; p += 3) {
+                sendSerialGcode(`G1 X${st.points[p].x.toFixed(1)} Y${st.points[p].y.toFixed(1)} F1800`, true);
+              }
+              const lastPt = st.points[st.points.length - 1];
+              sendSerialGcode(`G1 X${lastPt.x.toFixed(1)} Y${lastPt.y.toFixed(1)} F1800`, true);
+            }
+            plotter.completedStrokes.push(st);
+            const last = st.points[st.points.length - 1];
+            plotter.penX = last.x;
+            plotter.penY = last.y;
+            plotter.currentStrokeIdx++;
+          }
+          if (serialState.connected) sendSerialGcode('M5', true);
+          finishPlotterJob();
+        } else {
+          let budgetMm = 145 * plotter.speedMultiplier * dt;
+
+          while (budgetMm > 0 && plotter.currentStrokeIdx < plotter.plannedStrokes.length) {
+            const st = plotter.plannedStrokes[plotter.currentStrokeIdx];
+            const pts = st.points;
+            if (!pts || pts.length < 2) {
+              plotter.currentStrokeIdx++;
+              continue;
+            }
+
+            if (plotter.currentPointIdx === 0) {
+              const startPt = pts[0];
+              const dx = startPt.x - plotter.penX;
+              const dy = startPt.y - plotter.penY;
+              const dist = Math.hypot(dx, dy);
+
+              if (dist > 0.3) {
+                setPenState(false);
+                plotter.targetX = startPt.x;
+                plotter.targetY = startPt.y;
+                const travelStep = Math.min(budgetMm * 1.4, dist);
+                plotter.penX += (dx / dist) * travelStep;
+                plotter.penY += (dy / dist) * travelStep;
+                plotter.encoderSteps += Math.round(travelStep * 20);
+                budgetMm -= travelStep / 1.4;
+                break;
+              } else {
+                plotter.penX = startPt.x;
+                plotter.penY = startPt.y;
+                plotter.currentPointIdx = 1;
+                if (serialState.connected) {
+                  sendSerialGcode(`G0 X${startPt.x.toFixed(1)} Y${startPt.y.toFixed(1)}`, true);
+                }
+                setPenState(true);
+              }
+            }
+
+            if (plotter.currentPointIdx > 0 && plotter.currentPointIdx < pts.length) {
+              setPenState(true);
+              const targetPt = pts[plotter.currentPointIdx];
+              plotter.targetX = targetPt.x;
+              plotter.targetY = targetPt.y;
+              const dx = targetPt.x - plotter.penX;
+              const dy = targetPt.y - plotter.penY;
+              const dist = Math.hypot(dx, dy);
+
+              if (dist <= budgetMm) {
+                plotter.penX = targetPt.x;
+                plotter.penY = targetPt.y;
+                plotter.encoderSteps += Math.round(dist * 20);
+                budgetMm -= dist;
+
+                if (serialState.connected) {
+                  sendSerialGcode(`G1 X${targetPt.x.toFixed(1)} Y${targetPt.y.toFixed(1)} F1500`, true);
+                }
+
+                plotter.currentPointIdx++;
+
+                if (plotter.currentPointIdx >= pts.length) {
+                  plotter.completedStrokes.push(st);
+                  plotter.currentStrokeIdx++;
+                  plotter.currentPointIdx = 0;
+                  setPenState(false);
+                }
+              } else {
+                plotter.penX += (dx / dist) * budgetMm;
+                plotter.penY += (dy / dist) * budgetMm;
+                plotter.encoderSteps += Math.round(budgetMm * 20);
+                budgetMm = 0;
+              }
+            }
+          }
+
+          if (plotter.currentStrokeIdx >= plotter.plannedStrokes.length) {
+            finishPlotterJob();
+          }
+        }
+
+        updateTelemetryUI();
+        renderPlotterCanvas();
+      }
+
+      requestAnimationFrame(animationLoop);
+    }
+
+    function startPlotterJob(mode = 'ALL') {
+      if (!currentSolvedSystem) handleSolveFromInputs();
+      plotter.plannedStrokes = generatePlotterStrokes(currentSolvedSystem, mode);
+      plotter.completedStrokes = [];
+      plotter.currentStrokeIdx = 0;
+      plotter.currentPointIdx = 0;
+      plotter.isRunning = true;
+      plotter.isPaused = false;
+      setPenState(false);
+
+      if (serialState.connected) {
+        sendSerialGcode('G90');
+        sendSerialGcode('M17');
+      }
+
+      const modeLabel = mode === 'TEXT' ? 'WRITING HEADER' : mode === 'GRAPH' ? 'PLOTTING GRAPH' : 'WRITE + DRAW ALL';
+      plotter.phaseLabel = modeLabel;
+      const badge = document.getElementById('global-status-badge');
+      badge.textContent = serialState.connected ? 'STREAMING TO ESP32' : 'DRAWING ACTIVE';
+      badge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-secondary-soft theme-text-secondary font-bold animate-pulse-fast';
+
+      appendSerialLog(`[MACHINE] Started job: ${modeLabel} (${plotter.plannedStrokes.length} vector segments).`);
+      updateTelemetryUI();
+      renderPlotterCanvas();
+    }
+
+    function finishPlotterJob() {
+      plotter.isRunning = false;
+      plotter.isPaused = false;
+      setPenState(false);
+      plotter.phaseLabel = 'COMPLETED';
+      const badge = document.getElementById('global-status-badge');
+      badge.textContent = 'COMPLETED';
+      badge.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full theme-primary-soft theme-text-primary font-bold';
+      appendSerialLog(`[MACHINE] Drawing complete (100%). Auto-scaled graph plotted accurately.`);
+      updateTelemetryUI();
+      renderPlotterCanvas();
+    }
+
+    function setPenState(isDown) {
+      if (plotter.penDown !== isDown) {
+        plotter.penDown = isDown;
+        const badge = document.getElementById('pen-state-badge');
+        if (isDown) {
+          badge.textContent = 'PEN DOWN – M3';
+          badge.className = 'px-2.5 py-1 rounded-lg theme-secondary-soft font-mono text-[11px] font-bold theme-text-secondary';
+          if (serialState.connected && serialState.lastPenSent !== 'M3') {
+            serialState.lastPenSent = 'M3';
+            sendSerialGcode('M3', true);
+          }
+        } else {
+          badge.textContent = 'PEN UP – M5';
+          badge.className = 'px-2.5 py-1 rounded-lg theme-soft font-mono text-[11px] font-bold theme-text-primary';
+          if (serialState.connected && serialState.lastPenSent !== 'M5') {
+            serialState.lastPenSent = 'M5';
+            sendSerialGcode('M5', true);
+          }
+        }
+      }
+    }
+
+    function updateTelemetryUI() {
+      const total = plotter.plannedStrokes.length;
+      const pct = total > 0
+        ? Math.min(100, Math.round((plotter.currentStrokeIdx / total) * 100))
+        : (plotter.completedStrokes.length > 0 ? 100 : 0);
+
+      const rpm = plotter.isRunning && !plotter.isPaused
+        ? Math.round(118 * Math.min(plotter.speedMultiplier, 3.5))
+        : 0;
+
+      document.getElementById('strip-pen-x').textContent = `${plotter.penX.toFixed(1)} mm`;
+      document.getElementById('strip-pen-y').textContent = `${plotter.penY.toFixed(1)} mm`;
+      document.getElementById('strip-phase').textContent = plotter.phaseLabel;
+      document.getElementById('strip-progress').textContent = `${pct}%`;
+
+      document.getElementById('dash-cur-x').textContent = `${plotter.penX.toFixed(1)} mm`;
+      document.getElementById('dash-cur-y').textContent = `${plotter.penY.toFixed(1)} mm`;
+      document.getElementById('dash-tgt-x').textContent = `${plotter.targetX.toFixed(1)} mm`;
+      document.getElementById('dash-tgt-y').textContent = `${plotter.targetY.toFixed(1)} mm`;
+      document.getElementById('dash-rpm').textContent = `${rpm} RPM`;
+      document.getElementById('dash-progress').textContent = `${pct}%`;
+      document.getElementById('dash-encoder').textContent = `${plotter.encoderSteps} steps`;
+    }
+
+    // =========================================================================
+    // 9. UI BINDING & QUESTION SELECTION HANDLERS
+    // =========================================================================
+    let selectedBankId = SPM_QUESTION_BANK[0].id;
+
+    function renderQuestionBank() {
+      const topicVal = document.getElementById('topic-filter').value;
+      const sourceVal = document.getElementById('source-filter').value;
+      const listEl = document.getElementById('question-bank-list');
+
+      const filtered = SPM_QUESTION_BANK.filter(q => {
+        const matchTopic = topicVal === 'ALL' || q.topic === topicVal;
+        const matchSource = sourceVal === 'ALL' || q.source === sourceVal;
+        return matchTopic && matchSource;
+      });
+
+      document.getElementById('question-count-label').textContent = `${filtered.length} questions`;
+      listEl.innerHTML = '';
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="p-3 rounded-xl theme-soft text-xs theme-text-muted text-center">No questions match this filter. Select "All".</div>`;
+        return;
+      }
+
+      filtered.forEach(q => {
+        const isSelected = selectedBankId === q.id;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `w-full text-left p-2.5 rounded-2xl border transition cursor-pointer ${
+          isSelected ? 'theme-primary-soft font-semibold' : 'theme-soft hover:opacity-90'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-0.5">
+            <span class="px-2 py-0.5 rounded-lg theme-secondary-soft theme-text-secondary font-mono text-[10px] font-bold">${q.badge}</span>
+            <span class="font-mono text-[11px] theme-text-primary font-bold">${q.equations.join('  |  ')}</span>
+          </div>
+          <p class="text-xs theme-text-main line-clamp-1">${q.prompt}</p>
+        `;
+        card.onclick = () => {
+          selectedBankId = q.id;
+          populateEquationInputs(q.equations, q.prompt, q.shadeConfig, q.badge, q.topicName);
+          renderQuestionBank();
+        };
+        listEl.appendChild(card);
+      });
+    }
+
+    function populateEquationInputs(eqList, promptText, shadeConfig, badgeText = 'CUSTOM SYSTEM', topicTitle = 'SPM Core Mathematics') {
+      document.getElementById('eq-input-1').value = eqList[0] || '';
+      document.getElementById('eq-input-2').value = eqList[1] || '';
+      document.getElementById('eq-input-3').value = eqList[2] || '';
+      document.getElementById('eq-input-4').value = eqList[3] || '';
+
+      document.getElementById('eq-row-2').classList.toggle('hidden', !eqList[1] && eqList.length < 2);
+      document.getElementById('eq-row-3').classList.toggle('hidden', !eqList[2] && eqList.length < 3);
+      document.getElementById('eq-row-4').classList.toggle('hidden', !eqList[3]);
+
+      document.getElementById('question-notes-input').value = promptText || '';
+      document.getElementById('toggle-shade-region').checked = !!(shadeConfig && shadeConfig.enabled);
+
+      handleSolveFromInputs(badgeText, topicTitle, shadeConfig);
+    }
+
+    function updateCurveLegend(parsedEquations) {
+      const legendEl = document.getElementById('canvas-curve-legend');
+      const vars = ['--ink-curve1', '--ink-curve2', '--ink-curve3', '--ink-curve4'];
+      legendEl.innerHTML = parsedEquations.map((eq, i) => {
+        const col = getThemeVar(vars[i % vars.length]);
+        return `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full theme-soft theme-text-main font-semibold">
+            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${col};"></span>
+            Eq ${i + 1}: ${eq.raw}
+          </span>
+        `;
+      }).join('');
+    }
+
+    function handleSolveFromInputs(badgeOverride = null, topicOverride = null, shadeOverride = null) {
+      const eqs = [
+        document.getElementById('eq-input-1').value,
+        document.getElementById('eq-input-2').value,
+        document.getElementById('eq-input-3').value,
+        document.getElementById('eq-input-4').value
+      ].filter(s => s && s.trim().length > 0);
+
+      const promptText = document.getElementById('question-notes-input').value;
+      const bankMatch = SPM_QUESTION_BANK.find(q => q.id === selectedBankId);
+      const shadeConfig = shadeOverride || (bankMatch && eqs.join('|') === bankMatch.equations.join('|') ? bankMatch.shadeConfig : { enabled: false });
+
+      const solved = solveMultiEquationSystem(eqs, promptText, shadeConfig);
+      currentSolvedSystem = solved;
+
+      document.getElementById('solver-exam-tag').textContent = `${badgeOverride || 'MULTI-EQUATION SYSTEM'} • ${(topicOverride || 'SPM CORE MATHEMATICS').toUpperCase()}`;
+      document.getElementById('solver-topic-badge').textContent = `${solved.equations.length} EQUATION${solved.equations.length > 1 ? 'S' : ''}`;
+      document.getElementById('solver-main-equation').textContent = solved.equations.map((e, i) => `(${i + 1}) ${e.raw}`).join('   |   ');
+      document.getElementById('solver-question-desc').textContent = promptText || 'Auto-scaled multi-equation graph with critical intercepts and intersections.';
+
+      document.getElementById('solver-formula').innerHTML = solved.formulas
+        .map(f => `<div class="p-1.5 rounded-lg theme-card border theme-border">• ${f}</div>`)
+        .join('');
+
+      document.getElementById('solver-steps').innerHTML = solved.steps
+        .map(s => `<div class="p-1.5 rounded-lg theme-card border theme-border">${s}</div>`)
+        .join('');
+
+      document.getElementById('autoscale-range-badge').textContent =
+        `Auto-Scale X: [${solved.xDomain[0]}, ${solved.xDomain[1]}] (step ${solved.xStep}) • Y: [${solved.yDomain[0]}, ${solved.yDomain[1]}] (step ${solved.yStep})`;
+
+      const propCards = [
+        { label: 'X-AXIS RANGE', val: `${solved.xDomain[0]} to ${solved.xDomain[1]}` },
+        { label: 'Y-AXIS RANGE', val: `${solved.yDomain[0]} to ${solved.yDomain[1]}` },
+        { label: 'INTERSECTIONS', val: solved.intersections.length ? solved.intersections.map(p => p.label).join(', ') : 'None / Single' },
+        { label: 'ACTIVE CURVES', val: `${solved.equations.length} Plotted` }
+      ];
+      document.getElementById('solver-properties').innerHTML = propCards
+        .map(p => `
+          <div class="theme-card border theme-border rounded-xl p-2">
+            <span class="text-[10px] theme-text-muted block">${p.label}</span>
+            <span class="theme-text-main font-extrabold">${p.val}</span>
+          </div>
+        `)
+        .join('');
+
+      document.getElementById('solver-final-answer').textContent = solved.finalAnswer;
+
+      updateCurveLegend(solved.equations);
+      plotter.plannedStrokes = generatePlotterStrokes(solved, 'ALL');
+      renderPlotterCanvas();
+      appendSerialLog(`[SOLVER] Solved ${solved.equations.length} eq(s) | Auto-Scale X:[${solved.xDomain}] Y:[${solved.yDomain}]`);
+    }
+
+    function loadQuickPreset(key) {
+      if (key === 'mrsm12b') {
+        const q = SPM_QUESTION_BANK[0];
+        selectedBankId = q.id;
+        populateEquationInputs(q.equations, q.prompt, q.shadeConfig, q.badge, q.topicName);
+      } else if (key === 'quad1') {
+        populateEquationInputs(['y = x^2 - 4x + 3'], 'Quadratic Graph: Find roots, y-intercept, and minimum vertex.', { enabled: false }, 'QUICK PRESET', 'Quadratic Functions');
+      } else if (key === 'simul2') {
+        populateEquationInputs(['2x + y = 7', 'x - y = 2'], 'Simultaneous Equations: Find intersection of 2x + y = 7 and x - y = 2.', { enabled: false }, 'QUICK PRESET', 'Simultaneous Equations');
+      } else if (key === 'circle1') {
+        populateEquationInputs(['x^2 + y^2 = 25'], 'Circle Locus centered at origin O(0,0) with radius r = 5.', { enabled: false }, 'QUICK PRESET', 'Circle Locus');
+      } else if (key === 'trig1') {
+        populateEquationInputs(['y = 2sin(x)'], 'Trigonometric Graph: y = 2sin(x) for 0° ≤ x ≤ 360°.', { enabled: false }, 'QUICK PRESET', 'Trigonometric Graphs');
+      }
+      renderQuestionBank();
+    }
+
+    function setPlotterSpeed(mult) {
+      plotter.speedMultiplier = mult;
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.className = 'speed-btn px-2.5 py-1 rounded-md theme-text-muted transition cursor-pointer';
+      });
+      const activeBtn = document.getElementById(`spd-${mult}`);
+      if (activeBtn) {
+        activeBtn.className = 'speed-btn px-2.5 py-1 rounded-md theme-btn-primary font-bold transition cursor-pointer';
+      }
+      appendSerialLog(`[MACHINE] A4988 Stepper speed set to ${mult >= 500 ? 'INSTANT' : mult + 'x'}.`);
+    }
+
+    function manualJog(dx, dy) {
+      if (plotter.isRunning) {
+        showToast('Please stop automatic plotting before manual jog.');
+        return;
+      }
+      const prevX = plotter.penX;
+      const prevY = plotter.penY;
+      plotter.penX = Math.min(290, Math.max(10, plotter.penX + dx));
+      plotter.penY = Math.min(290, Math.max(10, plotter.penY + dy));
+      plotter.targetX = plotter.penX;
+      plotter.targetY = plotter.penY;
+      plotter.encoderSteps += Math.round(Math.hypot(dx, dy) * 20);
+
+      if (plotter.penDown) {
+        plotter.completedStrokes.push({
+          points: [{ x: prevX, y: prevY }, { x: plotter.penX, y: plotter.penY }],
+          color: getThemeVar('--ink-curve1') || '#D96B78',
+          width: 1.8,
+          phase: 'MANUAL'
+        });
+      }
+
+      const gcodeMove = `${plotter.penDown ? 'G1' : 'G0'} X${plotter.penX.toFixed(1)} Y${plotter.penY.toFixed(1)} F1500`;
+      sendSerialGcode(gcodeMove);
+      updateTelemetryUI();
+      renderPlotterCanvas();
+    }
+
+    function highlightHardware(group) {
+      document.querySelectorAll('.hw-btn').forEach(btn => {
+        if (btn.dataset.hw === group) {
+          btn.className = 'hw-btn px-3 py-1.5 rounded-xl theme-btn-primary font-bold transition cursor-pointer';
+        } else {
+          btn.className = 'hw-btn px-3 py-1.5 rounded-xl theme-soft theme-text-main border theme-border transition cursor-pointer';
+        }
+      });
+
+      document.querySelectorAll('.hw-wire').forEach(wire => {
+        const groups = wire.dataset.group.split(' ');
+        if (group === 'ALL' || groups.includes(group)) {
+          wire.classList.remove('wire-dim');
+          wire.classList.add('wire-active');
+        } else {
+          wire.classList.remove('wire-active');
+          wire.classList.add('wire-dim');
+        }
+      });
+    }
+
+    function updateDHT22(temp, hum) {
+      document.getElementById('dht-temp-display').textContent = `${temp.toFixed(1)}°C`;
+      document.getElementById('slider-temp-val').textContent = `${temp.toFixed(1)}°C`;
+      document.getElementById('dht-hum-display').textContent = `${hum}%`;
+      document.getElementById('slider-hum-val').textContent = `${hum}%`;
+
+      const box = document.getElementById('led-status-box');
+      const dot = document.getElementById('led-dot');
+      const title = document.getElementById('led-title');
+      const desc = document.getElementById('led-desc');
+
+      if (temp < 30) {
+        box.className = 'rounded-2xl p-3 theme-primary-soft flex items-center justify-between mb-4';
+        dot.className = 'w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]';
+        title.className = 'font-mono text-xs font-extrabold theme-text-main';
+        title.textContent = 'GREEN LED ACTIVE — NORMAL TEMP';
+        desc.className = 'font-mono text-[11px] theme-text-primary';
+        desc.textContent = `Temp ${temp.toFixed(1)}°C (< 30°C) • A4988 Stepper Drivers Cool & Stable`;
+      } else if (temp <= 35) {
+        box.className = 'rounded-2xl p-3 border border-amber-300 bg-amber-50 flex items-center justify-between mb-4';
+        dot.className = 'w-4 h-4 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]';
+        title.className = 'font-mono text-xs font-extrabold text-amber-900';
+        title.textContent = 'YELLOW LED ACTIVE — MODERATE WARNING';
+        desc.className = 'font-mono text-[11px] text-amber-700';
+        desc.textContent = `Temp ${temp.toFixed(1)}°C (30°C–35°C) • A4988 Heatsink Cooling Fan Recommended`;
+      } else {
+        box.className = 'rounded-2xl p-3 theme-secondary-soft flex items-center justify-between mb-4';
+        dot.className = 'w-4 h-4 rounded-full bg-rose-500 shadow-[0_0_12px_#f43f5e] animate-ping';
+        title.className = 'font-mono text-xs font-extrabold theme-text-secondary';
+        title.textContent = 'RED LED ACTIVE — HIGH TEMP ALERT!';
+        desc.className = 'font-mono text-[11px] theme-text-secondary';
+        desc.textContent = `Temp ${temp.toFixed(1)}°C (> 35°C) • A4988 Thermal Shutdown Protection Triggered!`;
+      }
+    }
+
+    function setTestTemp(t) {
+      document.getElementById('temp-slider').value = t;
+      const h = parseInt(document.getElementById('hum-slider').value, 10);
+      updateDHT22(t, h);
+      appendSerialLog(`[DHT22] Sensor reading: Temp = ${t.toFixed(1)}°C, Humidity = ${h}%`);
+    }
+
+    function appendSerialLog(msg) {
+      const consoleEl = document.getElementById('serial-console');
+      const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="text-slate-400">[${now}]</span> ${msg}`;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearSerialLog() {
+      document.getElementById('serial-console').innerHTML = '';
+      appendSerialLog('[SYSTEM] Serial Monitor buffer cleared.');
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-message').textContent = msg;
+      box.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        box.classList.add('translate-y-20', 'opacity-0');
+      }, 2800);
+    }
+
+    // =========================================================================
+    // 10. INITIALIZE APP ON DOMCONTENTLOADED
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderQuestionBank();
+      const defaultQ = SPM_QUESTION_BANK[0];
+      populateEquationInputs(defaultQ.equations, defaultQ.prompt, defaultQ.shadeConfig, defaultQ.badge, defaultQ.topicName);
+      updateTelemetryUI();
+      updateSerialUI();
+
+      appendSerialLog('[ESP32-C5] IoT Mathematical Drawing Machine (CNC Shield V3 + A4988) initialized.');
+      appendSerialLog('[AUTO-SCALE] Loaded MRSM Trial Q12(b) 3-Equation System (X: 0..35, Y: 0..45).');
+
+      // Serial Connect Buttons (Header & Panel 4)
+      const toggleSerialConnection = async () => {
+        if (serialState.connected) {
+          await disconnectEsp32Serial();
+        } else {
+          await connectEsp32Serial();
+        }
+      };
+      document.getElementById('btn-header-serial').addEventListener('click', toggleSerialConnection);
+      document.getElementById('btn-panel4-serial').addEventListener('click', toggleSerialConnection);
+
+      // Direct Serial Command Form
+      document.getElementById('serial-cmd-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('serial-cmd-input');
+        const cmd = input.value.trim();
+        if (cmd) {
+          sendSerialGcode(cmd);
+          input.value = '';
+        }
+      });
+
+      // Theme Switcher
+      document.getElementById('theme-selector').addEventListener('change', (e) => {
+        applyTheme(e.target.value);
+        showToast(`Theme switched to ${APP_THEMES[e.target.value].name}`);
+      });
+
+      // Add / Clear Equation Slots
+      document.getElementById('btn-add-eq-slot').addEventListener('click', () => {
+        const r2 = document.getElementById('eq-row-2');
+        const r3 = document.getElementById('eq-row-3');
+        const r4 = document.getElementById('eq-row-4');
+        if (r2.classList.contains('hidden')) r2.classList.remove('hidden');
+        else if (r3.classList.contains('hidden')) r3.classList.remove('hidden');
+        else if (r4.classList.contains('hidden')) r4.classList.remove('hidden');
+        else showToast('Maximum 4 equations already active.');
+      });
+
+      document.getElementById('btn-clear-extra-eqs').addEventListener('click', () => {
+        document.getElementById('eq-input-2').value = '';
+        document.getElementById('eq-input-3').value = '';
+        document.getElementById('eq-input-4').value = '';
+        document.getElementById('eq-row-4').classList.add('hidden');
+        handleSolveFromInputs('SINGLE EQUATION', 'SPM Core Mathematics', { enabled: false });
+        showToast('Cleared Equations 2, 3, and 4.');
+      });
+
+      document.getElementById('topic-filter').addEventListener('change', renderQuestionBank);
+      document.getElementById('source-filter').addEventListener('change', renderQuestionBank);
+
+      document.getElementById('btn-generate-random').addEventListener('click', () => {
+        const newQ = generateRandomSPMQuestion();
+        SPM_QUESTION_BANK.unshift(newQ);
+        selectedBankId = newQ.id;
+        document.getElementById('topic-filter').value = 'ALL';
+        document.getElementById('source-filter').value = 'ALL';
+        populateEquationInputs(newQ.equations, newQ.prompt, newQ.shadeConfig, newQ.badge, newQ.topicName);
+        renderQuestionBank();
+        showToast(`Generated: ${newQ.equations.join(' | ')}`);
+      });
+
+      document.getElementById('btn-solve-only').addEventListener('click', () => {
+        handleSolveFromInputs();
+        showToast('Solved & Auto-Scaled X/Y axes!');
+      });
+
+      document.getElementById('btn-send-plotter').addEventListener('click', () => {
+        handleSolveFromInputs();
+        startPlotterJob('ALL');
+      });
+
+      document.getElementById('btn-draw-all').addEventListener('click', () => startPlotterJob('ALL'));
+      document.getElementById('btn-write-text-only').addEventListener('click', () => startPlotterJob('TEXT'));
+      document.getElementById('btn-draw-graph-only').addEventListener('click', () => startPlotterJob('GRAPH'));
+
+      document.getElementById('btn-pause-resume').addEventListener('click', () => {
+        if (!plotter.isRunning) return;
+        plotter.isPaused = !plotter.isPaused;
+        plotter.phaseLabel = plotter.isPaused ? 'PAUSED' : 'DRAWING';
+        sendSerialGcode(plotter.isPaused ? '!' : '~');
+        appendSerialLog(plotter.isPaused ? '[MACHINE] Drawing paused.' : '[MACHINE] Drawing resumed.');
+        updateTelemetryUI();
+      });
+
+      document.getElementById('btn-stop-plotter').addEventListener('click', () => {
+        plotter.isRunning = false;
+        plotter.isPaused = false;
+        serialState.txQueue = [];
+        setPenState(false);
+        sendSerialGcode('!');
+        sendSerialGcode('M5');
+        plotter.phaseLabel = 'STOPPED';
+        document.getElementById('global-status-badge').textContent = 'STOPPED';
+        appendSerialLog('[MACHINE] Emergency STOP triggered – Pen lifted (M5).');
+        updateTelemetryUI();
+        renderPlotterCanvas();
+      });
+
+      document.getElementById('btn-clear-paper').addEventListener('click', () => {
+        plotter.isRunning = false;
+        plotter.completedStrokes = [];
+        plotter.currentStrokeIdx = 0;
+        setPenState(false);
+        plotter.phaseLabel = 'SHEET CLEARED';
+        appendSerialLog('[MACHINE] 300x300mm drawing sheet cleared.');
+        updateTelemetryUI();
+        renderPlotterCanvas();
+      });
+
+      document.getElementById('btn-home-pos').addEventListener('click', () => {
+        plotter.isRunning = false;
+        setPenState(false);
+        plotter.penX = 18;
+        plotter.penY = 18;
+        plotter.targetX = 18;
+        plotter.targetY = 18;
+        plotter.phaseLabel = 'HOME (18,18)';
+        sendSerialGcode('G28');
+        appendSerialLog('[MACHINE] Pen returned to Home position (18.0, 18.0 mm).');
+        updateTelemetryUI();
+        renderPlotterCanvas();
+      });
+
+      document.getElementById('btn-pen-up').addEventListener('click', () => {
+        setPenState(false);
+        sendSerialGcode('M5');
+        renderPlotterCanvas();
+      });
+
+      document.getElementById('btn-pen-down').addEventListener('click', () => {
+        setPenState(true);
+        sendSerialGcode('M3');
+        renderPlotterCanvas();
+      });
+
+      document.getElementById('toggle-travel-lines').addEventListener('change', renderPlotterCanvas);
+      document.getElementById('toggle-shade-region').addEventListener('change', renderPlotterCanvas);
+
+      const tempSlider = document.getElementById('temp-slider');
+      const humSlider = document.getElementById('hum-slider');
+      tempSlider.addEventListener('input', () => updateDHT22(parseFloat(tempSlider.value), parseInt(humSlider.value, 10)));
+      humSlider.addEventListener('input', () => updateDHT22(parseFloat(tempSlider.value), parseInt(humSlider.value, 10)));
+
+      document.getElementById('btn-copy-arduino').addEventListener('click', () => {
+        const codeText = document.getElementById('arduino-code-block').innerText;
+        const tempArea = document.createElement('textarea');
+        tempArea.value = codeText;
+        document.body.appendChild(tempArea);
+        tempArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempArea);
+        showToast('ESP32-C5 + CNC Shield V3 (A4988) firmware copied!');
+      });
+
+      window.addEventListener('resize', resizeCanvas);
+      requestAnimationFrame(animationLoop);
+    });
+  </script>
+</body>
+</html>
